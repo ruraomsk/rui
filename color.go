@@ -169,7 +169,7 @@ func stringToColor(text string) (Color, error) {
 	if strings.HasPrefix(text, "rgb") {
 		args := parseRGB(text[3:])
 		if len(args) == 3 {
-			return Color(0xFF000000 | (args[0] << 16) | (args[1] << 8) | args[2]), nil
+			return Color(0xFF0000 | (args[0] << 16) | (args[1] << 8) | args[2]), nil
 		}
 	}
 
