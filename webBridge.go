@@ -16,6 +16,7 @@ type wsBridge struct {
 	conn            *websocket.Conn
 	answer          map[int]chan DataObject
 	answerID        int
+	senderMutex     sync.Mutex
 	answerMutex     sync.Mutex
 	closed          bool
 	buffer          strings.Builder
@@ -151,6 +152,8 @@ func (bridge *wsBridge) argToString(arg any) (string, bool) {
 }
 
 func (bridge *wsBridge) callFunc(funcName string, args ...any) bool {
+	bridge.senderMutex.Lock()
+	defer bridge.senderMutex.Unlock()
 	bridge.buffer.Reset()
 	bridge.buffer.WriteString(funcName)
 	bridge.buffer.WriteRune('(')
@@ -225,6 +228,7 @@ func (bridge *wsBridge) removeProperty(htmlID, property string) {
 }
 
 func (bridge *wsBridge) addAnimationCSS(css string) {
+
 	bridge.writeMessage(`var styles = document.getElementById('ruiAnimations');
 if (styles) {
 	styles.textContent += '` + css + `';
@@ -329,6 +333,9 @@ func (bridge *wsBridge) callCanvasImageFunc(url string, property string, funcNam
 }
 
 func (bridge *wsBridge) canvasFinish() {
+	bridge.senderMutex.Lock()
+	defer bridge.senderMutex.Unlock()
+
 	bridge.canvasBuffer.WriteString("\n")
 	script := bridge.canvasBuffer.String()
 	if ProtocolInDebugLog {
@@ -355,6 +362,9 @@ func (bridge *wsBridge) readMessage() (string, bool) {
 }
 
 func (bridge *wsBridge) writeMessage(script string) bool {
+	bridge.senderMutex.Lock()
+	defer bridge.senderMutex.Unlock()
+
 	if ProtocolInDebugLog {
 		DebugLog("Run script:")
 		DebugLog(script)
