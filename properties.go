@@ -3,7 +3,10 @@ package rui
 import (
 	"sort"
 	"strings"
+	"sync"
 )
+
+var mutexProperties sync.Mutex
 
 // Properties interface of properties map
 type Properties interface {
@@ -37,6 +40,8 @@ func (properties *propertyList) Get(tag string) any {
 }
 
 func (properties *propertyList) getRaw(tag string) any {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
 	if value, ok := properties.properties[tag]; ok {
 		return value
 	}
@@ -44,22 +49,32 @@ func (properties *propertyList) getRaw(tag string) any {
 }
 
 func (properties *propertyList) setRaw(tag string, value any) {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
 	properties.properties[tag] = value
 }
 
 func (properties *propertyList) Remove(tag string) {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
 	delete(properties.properties, strings.ToLower(tag))
 }
 
 func (properties *propertyList) remove(tag string) {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
 	delete(properties.properties, tag)
 }
 
 func (properties *propertyList) Clear() {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
 	properties.properties = map[string]any{}
 }
 
 func (properties *propertyList) AllTags() []string {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
 	tags := make([]string, 0, len(properties.properties))
 	for t := range properties.properties {
 		tags = append(tags, t)
