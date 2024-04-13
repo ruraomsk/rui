@@ -80,8 +80,6 @@ func (progress *progressBarData) Set(tag string, value any) bool {
 }
 
 func (progress *progressBarData) set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	if progress.viewData.set(tag, value) {
 		progress.propertyChanged(tag)

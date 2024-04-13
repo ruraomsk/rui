@@ -188,8 +188,6 @@ func (animation *animationData) normalizeTag(tag string) string {
 }
 
 func (animation *animationData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 	if value == nil {
 		animation.Remove(tag)
 		return true
@@ -200,9 +198,9 @@ func (animation *animationData) Set(tag string, value any) bool {
 		if text, ok := value.(string); ok {
 			text = strings.Trim(text, " \t\n\r")
 			if text == "" {
-				delete(animation.properties, tag)
+				animation.properties.Delete(tag)
 			} else {
-				animation.properties[tag] = text
+				animation.propertyList.setRaw(tag, text)
 			}
 			return true
 		}
@@ -230,7 +228,7 @@ func (animation *animationData) Set(tag string, value any) bool {
 			} else if value.To == nil {
 				ErrorLog("AnimatedProperty.To is nil")
 			} else {
-				animation.properties[tag] = []AnimatedProperty{value}
+				animation.propertyList.setRaw(tag, []AnimatedProperty{value})
 				return true
 			}
 
@@ -259,7 +257,7 @@ func (animation *animationData) Set(tag string, value any) bool {
 				}
 			}
 			if len(props) > 0 {
-				animation.properties[tag] = props
+				animation.propertyList.setRaw(tag, props)
 				return true
 			} else {
 				ErrorLog("[]AnimatedProperty is empty")
@@ -307,7 +305,7 @@ func (animation *animationData) Set(tag string, value any) bool {
 			switch value.Type() {
 			case ObjectNode:
 				if prop, ok := parseObject(value.Object()); ok {
-					animation.properties[tag] = []AnimatedProperty{prop}
+					animation.propertyList.setRaw(tag, []AnimatedProperty{prop})
 					return true
 				}
 
@@ -323,7 +321,7 @@ func (animation *animationData) Set(tag string, value any) bool {
 					}
 				}
 				if len(props) > 0 {
-					animation.properties[tag] = props
+					animation.propertyList.setRaw(tag, props)
 					return true
 				}
 
@@ -343,7 +341,7 @@ func (animation *animationData) Set(tag string, value any) bool {
 
 	case TimingFunction:
 		if text, ok := value.(string); ok {
-			animation.properties[tag] = text
+			animation.properties.Store(tag, text)
 			return true
 		}
 
@@ -361,7 +359,7 @@ func (animation *animationData) Set(tag string, value any) bool {
 }
 
 func (animation *animationData) Remove(tag string) {
-	delete(animation.properties, animation.normalizeTag(tag))
+	animation.properties.Delete(animation.normalizeTag(tag))
 }
 
 func (animation *animationData) Get(tag string) any {

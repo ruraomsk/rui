@@ -117,8 +117,6 @@ func (imageView *imageViewData) remove(tag string) {
 }
 
 func (imageView *imageViewData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	return imageView.set(imageView.normalizeTag(tag), value)
 }
@@ -132,7 +130,7 @@ func (imageView *imageViewData) set(tag string, value any) bool {
 	switch tag {
 	case Source:
 		if text, ok := value.(string); ok {
-			imageView.properties[tag] = text
+			imageView.properties.Store(tag, text)
 			if imageView.created {
 				src, srcset := imageView.src(text)
 				imageView.session.updateProperty(imageView.htmlID(), "src", src)
@@ -151,9 +149,9 @@ func (imageView *imageViewData) set(tag string, value any) bool {
 	case SrcSet:
 		if text, ok := value.(string); ok {
 			if text == "" {
-				delete(imageView.properties, tag)
+				imageView.properties.Delete(tag)
 			} else {
-				imageView.properties[tag] = text
+				imageView.properties.Store(tag, text)
 			}
 			if imageView.created {
 				_, srcset := imageView.src(text)
@@ -170,7 +168,7 @@ func (imageView *imageViewData) set(tag string, value any) bool {
 
 	case AltText:
 		if text, ok := value.(string); ok {
-			imageView.properties[AltText] = text
+			imageView.properties.Store(AltText, text)
 			if imageView.created {
 				updateInnerHTML(imageView.htmlID(), imageView.session)
 			}
@@ -182,9 +180,9 @@ func (imageView *imageViewData) set(tag string, value any) bool {
 	case LoadedEvent, ErrorEvent:
 		if listeners, ok := valueToNoParamListeners[ImageView](value); ok {
 			if listeners == nil {
-				delete(imageView.properties, tag)
+				imageView.properties.Delete(tag)
 			} else {
-				imageView.properties[tag] = listeners
+				imageView.properties.Store(tag, listeners)
 			}
 			return true
 		}

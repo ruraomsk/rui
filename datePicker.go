@@ -75,27 +75,27 @@ func (picker *datePickerData) remove(tag string) {
 		return
 
 	case DatePickerMin:
-		delete(picker.properties, DatePickerMin)
+		picker.properties.Delete(DatePickerMin)
 		if picker.created {
 			picker.session.removeProperty(picker.htmlID(), Min)
 		}
 
 	case DatePickerMax:
-		delete(picker.properties, DatePickerMax)
+		picker.properties.Delete(DatePickerMax)
 		if picker.created {
 			picker.session.removeProperty(picker.htmlID(), Max)
 		}
 
 	case DatePickerStep:
-		delete(picker.properties, DatePickerStep)
+		picker.properties.Delete(DatePickerStep)
 		if picker.created {
 			picker.session.removeProperty(picker.htmlID(), Step)
 		}
 
 	case DatePickerValue:
-		if _, ok := picker.properties[DatePickerValue]; ok {
+		if _, ok := picker.properties.Load(DatePickerValue); ok {
 			oldDate := GetDatePickerValue(picker)
-			delete(picker.properties, DatePickerValue)
+			picker.properties.Delete(DatePickerValue)
 			date := GetDatePickerValue(picker)
 			if picker.created {
 				picker.session.callFunc("setInputValue", picker.htmlID(), date.Format(dateFormat))
@@ -115,8 +115,6 @@ func (picker *datePickerData) remove(tag string) {
 }
 
 func (picker *datePickerData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	return picker.set(picker.normalizeTag(tag), value)
 }
@@ -130,7 +128,7 @@ func (picker *datePickerData) set(tag string, value any) bool {
 	setTimeValue := func(tag string) (time.Time, bool) {
 		switch value := value.(type) {
 		case time.Time:
-			picker.properties[tag] = value
+			picker.properties.Store(tag, value)
 			return value, true
 
 		case string:
@@ -171,7 +169,7 @@ func (picker *datePickerData) set(tag string, value any) bool {
 				}
 
 				if date, err := time.Parse(format, text); err == nil {
-					picker.properties[tag] = value
+					picker.properties.Store(tag, value)
 					return date, true
 				}
 			}
@@ -319,7 +317,7 @@ func (picker *datePickerData) handleCommand(self View, command string, data Data
 		if text, ok := data.PropertyValue("text"); ok {
 			if value, err := time.Parse(dateFormat, text); err == nil {
 				oldValue := GetDatePickerValue(picker)
-				picker.properties[DatePickerValue] = value
+				picker.properties.Store(DatePickerValue, value)
 				if value != oldValue {
 					for _, listener := range picker.dateChangedListeners {
 						listener(picker, value, oldValue)

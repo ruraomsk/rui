@@ -3,6 +3,7 @@ package rui
 import (
 	"fmt"
 	"strings"
+	"sync"
 )
 
 // BorderProperty is the interface of a bounds property data
@@ -20,7 +21,7 @@ type boundsPropertyData struct {
 // NewBoundsProperty creates the new BoundsProperty object
 func NewBoundsProperty(params Params) BoundsProperty {
 	bounds := new(boundsPropertyData)
-	bounds.properties = map[string]any{}
+	bounds.properties = sync.Map{}
 	if params != nil {
 		for _, tag := range []string{Top, Right, Bottom, Left} {
 			if value, ok := params[tag]; ok {
@@ -62,7 +63,7 @@ func (bounds *boundsPropertyData) writeString(buffer *strings.Builder, indent st
 	buffer.WriteString("_{ ")
 	comma := false
 	for _, tag := range []string{Top, Right, Bottom, Left} {
-		if value, ok := bounds.properties[tag]; ok {
+		if value, ok := bounds.properties.Load(tag); ok {
 			if comma {
 				buffer.WriteString(", ")
 			}
@@ -80,8 +81,6 @@ func (bounds *boundsPropertyData) Remove(tag string) {
 }
 
 func (bounds *boundsPropertyData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	if value == nil {
 		bounds.Remove(tag)
@@ -103,7 +102,7 @@ func (bounds *boundsPropertyData) Set(tag string, value any) bool {
 
 func (bounds *boundsPropertyData) Get(tag string) any {
 	tag = bounds.normalizeTag(tag)
-	if value, ok := bounds.properties[tag]; ok {
+	if value, ok := bounds.properties.Load(tag); ok {
 		return value
 	}
 
@@ -253,7 +252,7 @@ func (properties *propertyList) setBounds(tag string, value any) bool {
 							return false
 						}
 					}
-					properties.properties[tag] = bounds
+					properties.properties.Store(tag, bounds)
 					return true
 
 				default:
@@ -264,13 +263,13 @@ func (properties *propertyList) setBounds(tag string, value any) bool {
 			return properties.setSizeProperty(tag, value)
 
 		case SizeUnit:
-			properties.properties[tag] = value
+			properties.properties.Store(tag, value)
 
 		case float32:
-			properties.properties[tag] = Px(float64(value))
+			properties.properties.Store(tag, Px(float64(value)))
 
 		case float64:
-			properties.properties[tag] = Px(value)
+			properties.properties.Store(tag, Px(value))
 
 		case Bounds:
 			bounds := NewBoundsProperty(nil)
@@ -286,10 +285,10 @@ func (properties *propertyList) setBounds(tag string, value any) bool {
 			if value.Left.Type != Auto {
 				bounds.Set(Left, value.Left)
 			}
-			properties.properties[tag] = bounds
+			properties.properties.Store(tag, bounds)
 
 		case BoundsProperty:
-			properties.properties[tag] = value
+			properties.properties.Store(tag, value)
 
 		case DataObject:
 			bounds := NewBoundsProperty(nil)
@@ -301,11 +300,11 @@ func (properties *propertyList) setBounds(tag string, value any) bool {
 					}
 				}
 			}
-			properties.properties[tag] = bounds
+			properties.properties.Store(tag, bounds)
 
 		default:
 			if n, ok := isInt(value); ok {
-				properties.properties[tag] = Px(float64(n))
+				properties.properties.Store(tag, Px(float64(n)))
 			} else {
 				notCompatibleType(tag, value)
 				return false
@@ -317,7 +316,7 @@ func (properties *propertyList) setBounds(tag string, value any) bool {
 }
 
 func (properties *propertyList) boundsProperty(tag string) BoundsProperty {
-	if value, ok := properties.properties[tag]; ok {
+	if value, ok := properties.properties.Load(tag); ok {
 		switch value := value.(type) {
 		case string:
 			bounds := NewBoundsProperty(nil)
@@ -352,14 +351,14 @@ func (properties *propertyList) removeBoundsSide(mainTag, sideTag string) {
 	bounds := properties.boundsProperty(mainTag)
 	if bounds.Get(sideTag) != nil {
 		bounds.Remove(sideTag)
-		properties.properties[mainTag] = bounds
+		properties.properties.Store(mainTag, bounds)
 	}
 }
 
 func (properties *propertyList) setBoundsSide(mainTag, sideTag string, value any) bool {
 	bounds := properties.boundsProperty(mainTag)
 	if bounds.Set(sideTag, value) {
-		properties.properties[mainTag] = bounds
+		properties.properties.Store(mainTag, bounds)
 		return true
 	}
 

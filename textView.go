@@ -58,9 +58,6 @@ func (textView *textViewData) remove(tag string) {
 }
 
 func (textView *textViewData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
-
 	return textView.set(strings.ToLower(tag), value)
 }
 
@@ -69,30 +66,30 @@ func (textView *textViewData) set(tag string, value any) bool {
 	case Text:
 		switch value := value.(type) {
 		case string:
-			textView.properties[Text] = value
+			textView.properties.Store(Text, value)
 
 		case fmt.Stringer:
-			textView.properties[Text] = value.String()
+			textView.properties.Store(Text, value.String())
 
 		case float32:
-			textView.properties[Text] = fmt.Sprintf("%g", float64(value))
+			textView.properties.Store(Text, fmt.Sprintf("%g", float64(value)))
 
 		case float64:
-			textView.properties[Text] = fmt.Sprintf("%g", value)
+			textView.properties.Store(Text, fmt.Sprintf("%g", value))
 
 		case []rune:
-			textView.properties[Text] = string(value)
+			textView.properties.Store(Text, string(value))
 
 		case bool:
 			if value {
-				textView.properties[Text] = "true"
+				textView.properties.Store(Text, "true")
 			} else {
-				textView.properties[Text] = "false"
+				textView.properties.Store(Text, "false")
 			}
 
 		default:
 			if n, ok := isInt(value); ok {
-				textView.properties[Text] = fmt.Sprintf("%d", n)
+				textView.properties.Store(Text, fmt.Sprintf("%d", n))
 			} else {
 				notCompatibleType(tag, value)
 				return false

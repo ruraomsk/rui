@@ -100,9 +100,6 @@ func (picker *numberPickerData) remove(tag string) {
 }
 
 func (picker *numberPickerData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
-
 	return picker.set(picker.normalizeTag(tag), value)
 }
 
@@ -248,7 +245,7 @@ func (picker *numberPickerData) handleCommand(self View, command string, data Da
 		if text, ok := data.PropertyValue("text"); ok {
 			if value, err := strconv.ParseFloat(text, 32); err == nil {
 				oldValue := GetNumberPickerValue(picker)
-				picker.properties[NumberPickerValue] = text
+				picker.properties.Store(NumberPickerValue, text)
 				if value != oldValue {
 					for _, listener := range picker.numberChangedListeners {
 						listener(picker, value, oldValue)

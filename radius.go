@@ -3,6 +3,7 @@ package rui
 import (
 	"fmt"
 	"strings"
+	"sync"
 )
 
 const (
@@ -109,7 +110,7 @@ type radiusPropertyData struct {
 // NewRadiusProperty creates the new RadiusProperty
 func NewRadiusProperty(params Params) RadiusProperty {
 	result := new(radiusPropertyData)
-	result.properties = map[string]any{}
+	result.properties = sync.Map{}
 	if params != nil {
 		for _, tag := range []string{X, Y, TopLeft, TopRight, BottomLeft, BottomRight, TopLeftX, TopLeftY,
 			TopRightX, TopRightY, BottomLeftX, BottomLeftY, BottomRightX, BottomRightY} {
@@ -130,7 +131,7 @@ func (radius *radiusPropertyData) writeString(buffer *strings.Builder, indent st
 	comma := false
 	for _, tag := range []string{X, Y, TopLeft, TopLeftX, TopLeftY, TopRight, TopRightX, TopRightY,
 		BottomLeft, BottomLeftX, BottomLeftY, BottomRight, BottomRightX, BottomRightY} {
-		if value, ok := radius.properties[tag]; ok {
+		if value, ok := radius.properties.Load(tag); ok {
 			if comma {
 				buffer.WriteString(", ")
 			}
@@ -150,24 +151,24 @@ func (radius *radiusPropertyData) String() string {
 
 func (radius *radiusPropertyData) delete(tags []string) {
 	for _, tag := range tags {
-		delete(radius.properties, tag)
+		radius.properties.Delete(tag)
 	}
 }
 
 func (radius *radiusPropertyData) deleteUnusedTags() {
 	for _, tag := range []string{X, Y} {
-		if _, ok := radius.properties[tag]; ok {
+		if _, ok := radius.properties.Load(tag); ok {
 			unused := true
 			for _, t := range []string{TopLeft, TopRight, BottomLeft, BottomRight} {
-				if _, ok := radius.properties[t+"-"+tag]; !ok {
-					if _, ok := radius.properties[t]; !ok {
+				if _, ok := radius.properties.Load(t + "-" + tag); !ok {
+					if _, ok := radius.properties.Load(t); !ok {
 						unused = false
 						break
 					}
 				}
 			}
 			if unused {
-				delete(radius.properties, tag)
+				radius.properties.Delete(tag)
 			}
 		}
 	}
@@ -192,31 +193,31 @@ func (radius *radiusPropertyData) deleteUnusedTags() {
 	for _, tag := range []string{TopLeft, TopRight, BottomLeft, BottomRight} {
 		tagX := tag + "-x"
 		tagY := tag + "-y"
-		valueX, okX := radius.properties[tagX]
-		valueY, okY := radius.properties[tagY]
+		valueX, okX := radius.properties.Load(tagX)
+		valueY, okY := radius.properties.Load(tagY)
 
-		if value, ok := radius.properties[tag]; ok {
+		if value, ok := radius.properties.Load(tag); ok {
 			if okX && okY {
-				delete(radius.properties, tag)
+				radius.properties.Delete(tag)
 			} else if okX && !okY {
 				if equalValue(value, valueX) {
-					delete(radius.properties, tagX)
+					radius.properties.Delete(tag)
 				} else {
-					radius.properties[tagY] = value
-					delete(radius.properties, tag)
+					radius.properties.Store(tagY, value)
+					radius.properties.Delete(tag)
 				}
 			} else if !okX && okY {
 				if equalValue(value, valueY) {
-					delete(radius.properties, tagY)
+					radius.properties.Delete(tagY)
 				} else {
-					radius.properties[tagX] = value
-					delete(radius.properties, tag)
+					radius.properties.Store(tagX, value)
+					radius.properties.Delete(tag)
 				}
 			}
 		} else if okX && okY && equalValue(valueX, valueY) {
-			radius.properties[tag] = valueX
-			delete(radius.properties, tagX)
-			delete(radius.properties, tagY)
+			radius.properties.Store(tag, valueX)
+			radius.properties.Delete(tagX)
+			radius.properties.Delete(tagY)
 		}
 	}
 }
@@ -226,13 +227,13 @@ func (radius *radiusPropertyData) Remove(tag string) {
 
 	switch tag {
 	case X, Y:
-		if _, ok := radius.properties[tag]; ok {
+		if _, ok := radius.properties.Load(tag); ok {
 			radius.Set(tag, AutoSize())
-			delete(radius.properties, tag)
+			radius.properties.Delete(tag)
 		}
 
 	case TopLeftX, TopLeftY, TopRightX, TopRightY, BottomLeftX, BottomLeftY, BottomRightX, BottomRightY:
-		delete(radius.properties, tag)
+		radius.properties.Delete(tag)
 
 	case TopLeft, TopRight, BottomLeft, BottomRight:
 		radius.delete([]string{tag, tag + "-x", tag + "-y"})
@@ -244,8 +245,6 @@ func (radius *radiusPropertyData) Remove(tag string) {
 }
 
 func (radius *radiusPropertyData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	if value == nil {
 		radius.Remove(tag)
@@ -258,11 +257,11 @@ func (radius *radiusPropertyData) Set(tag string, value any) bool {
 		if radius.setSizeProperty(tag, value) {
 			radius.delete([]string{TopLeftX, TopRightX, BottomLeftX, BottomRightX})
 			for _, t := range []string{TopLeft, TopRight, BottomLeft, BottomRight} {
-				if val, ok := radius.properties[t]; ok {
-					if _, ok := radius.properties[t+"-y"]; !ok {
-						radius.properties[t+"-y"] = val
+				if val, ok := radius.properties.Load(t); ok {
+					if _, ok := radius.properties.Load(t + "-y"); !ok {
+						radius.properties.Store(t+"-y", val)
 					}
-					delete(radius.properties, t)
+					radius.properties.Delete(t)
 				}
 			}
 			return true
@@ -272,11 +271,11 @@ func (radius *radiusPropertyData) Set(tag string, value any) bool {
 		if radius.setSizeProperty(tag, value) {
 			radius.delete([]string{TopLeftY, TopRightY, BottomLeftY, BottomRightY})
 			for _, t := range []string{TopLeft, TopRight, BottomLeft, BottomRight} {
-				if val, ok := radius.properties[t]; ok {
-					if _, ok := radius.properties[t+"-x"]; !ok {
-						radius.properties[t+"-x"] = val
+				if val, ok := radius.properties.Load(t); ok {
+					if _, ok := radius.properties.Load(t + "-x"); !ok {
+						radius.properties.Store(t+"-x", val)
 					}
-					delete(radius.properties, t)
+					radius.properties.Delete(t)
 				}
 			}
 			return true
@@ -291,7 +290,7 @@ func (radius *radiusPropertyData) Set(tag string, value any) bool {
 	case TopLeft, TopRight, BottomLeft, BottomRight:
 		switch value := value.(type) {
 		case SizeUnit:
-			radius.properties[tag] = value
+			radius.properties.Store(tag, value)
 			radius.delete([]string{tag + "-x", tag + "-y"})
 			radius.deleteUnusedTags()
 			return true
@@ -323,28 +322,28 @@ func (radius *radiusPropertyData) Set(tag string, value any) bool {
 
 func (radius *radiusPropertyData) Get(tag string) any {
 	tag = radius.normalizeTag(tag)
-	if value, ok := radius.properties[tag]; ok {
+	if value, ok := radius.properties.Load(tag); ok {
 		return value
 	}
 
 	switch tag {
 	case TopLeftX, TopLeftY, TopRightX, TopRightY, BottomLeftX, BottomLeftY, BottomRightX, BottomRightY:
 		tagLen := len(tag)
-		if value, ok := radius.properties[tag[:tagLen-2]]; ok {
+		if value, ok := radius.properties.Load(tag[:tagLen-2]); ok {
 			return value
 		}
-		if value, ok := radius.properties[tag[tagLen-1:]]; ok {
+		if value, ok := radius.properties.Load(tag[tagLen-1:]); ok {
 			return value
 		}
 	}
 
 	switch tag {
 	case TopLeftX, TopRightX, BottomLeftX, BottomRightX:
-		if value, ok := radius.properties[X]; ok {
+		if value, ok := radius.properties.Load(X); ok {
 			return value
 		}
 	case TopLeftY, TopRightY, BottomLeftY, BottomRightY:
-		if value, ok := radius.properties[Y]; ok {
+		if value, ok := radius.properties.Load(Y); ok {
 			return value
 		}
 	}
@@ -576,17 +575,17 @@ func getRadiusProperty(style Properties) RadiusProperty {
 func (properties *propertyList) setRadius(value any) bool {
 
 	if value == nil {
-		delete(properties.properties, Radius)
+		properties.properties.Delete(Radius)
 		return true
 	}
 
 	switch value := value.(type) {
 	case RadiusProperty:
-		properties.properties[Radius] = value
+		properties.properties.Store(Radius, value)
 		return true
 
 	case SizeUnit:
-		properties.properties[Radius] = value
+		properties.properties.Store(Radius, value)
 		return true
 
 	case BoxRadius:
@@ -620,7 +619,7 @@ func (properties *propertyList) setRadius(value any) bool {
 				radius.Set(BottomRightY, value.BottomRightY)
 			}
 		}
-		properties.properties[Radius] = radius
+		properties.properties.Store(Radius, radius)
 		return true
 
 	case string:
@@ -645,7 +644,7 @@ func (properties *propertyList) setRadius(value any) bool {
 				radius.Set(tag, value)
 			}
 		}
-		properties.properties[Radius] = radius
+		properties.properties.Store(Radius, radius)
 		return true
 
 	case float32:
@@ -665,13 +664,13 @@ func (properties *propertyList) setRadius(value any) bool {
 }
 
 func (properties *propertyList) removeRadiusElement(tag string) {
-	if value, ok := properties.properties[Radius]; ok && value != nil {
+	if value, ok := properties.properties.Load(Radius); ok && value != nil {
 		radius := getRadiusProperty(properties)
 		radius.Remove(tag)
 		if len(radius.AllTags()) == 0 {
-			delete(properties.properties, Radius)
+			properties.properties.Delete(Radius)
 		} else {
-			properties.properties[Radius] = radius
+			properties.properties.Store(Radius, radius)
 		}
 	}
 }
@@ -684,7 +683,7 @@ func (properties *propertyList) setRadiusElement(tag string, value any) bool {
 
 	radius := getRadiusProperty(properties)
 	if radius.Set(tag, value) {
-		properties.properties[Radius] = radius
+		properties.properties.Store(Radius, radius)
 		return true
 	}
 

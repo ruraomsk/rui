@@ -506,13 +506,13 @@ func (view *viewData) setKeyListener(tag string, value any) bool {
 	} else {
 		switch tag {
 		case KeyDownEvent:
-			view.properties[tag] = listeners
+			view.properties.Store(tag, listeners)
 			if view.created {
 				view.session.updateProperty(view.htmlID(), "onkeydown", "keyDownEvent(this, event)")
 			}
 
 		case KeyUpEvent:
-			view.properties[tag] = listeners
+			view.properties.Store(tag, listeners)
 			if view.created {
 				view.session.updateProperty(view.htmlID(), "onkeyup", "keyUpEvent(this, event)")
 			}
@@ -526,7 +526,7 @@ func (view *viewData) setKeyListener(tag string, value any) bool {
 }
 
 func (view *viewData) removeKeyListener(tag string) {
-	delete(view.properties, tag)
+	view.properties.Delete(tag)
 	if view.created {
 		switch tag {
 		case KeyDownEvent:

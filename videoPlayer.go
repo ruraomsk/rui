@@ -60,15 +60,15 @@ func (player *videoPlayerData) remove(tag string) {
 	switch tag {
 
 	case VideoWidth:
-		delete(player.properties, tag)
+		player.properties.Delete(tag)
 		player.session.removeProperty(player.htmlID(), "width")
 
 	case VideoHeight:
-		delete(player.properties, tag)
+		player.properties.Delete(tag)
 		player.session.removeProperty(player.htmlID(), "height")
 
 	case Poster:
-		delete(player.properties, tag)
+		player.properties.Delete(tag)
 		player.session.removeProperty(player.htmlID(), Poster)
 
 	default:
@@ -77,9 +77,6 @@ func (player *videoPlayerData) remove(tag string) {
 }
 
 func (player *videoPlayerData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
-
 	return player.set(strings.ToLower(tag), value)
 }
 

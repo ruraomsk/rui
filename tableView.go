@@ -310,8 +310,8 @@ func (table *tableViewData) remove(tag string) {
 
 	case SelectionMode, TableVerticalAlign, Gap, CellBorder, CellPadding, RowStyle,
 		ColumnStyle, CellStyle, HeadHeight, HeadStyle, FootHeight, FootStyle, AllowSelection:
-		if _, ok := table.properties[tag]; ok {
-			delete(table.properties, tag)
+		if _, ok := table.properties.Load(tag); ok {
+			table.properties.Delete(tag)
 			table.propertyChanged(tag)
 		}
 
@@ -342,9 +342,6 @@ func (table *tableViewData) remove(tag string) {
 }
 
 func (table *tableViewData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
-
 	return table.set(table.normalizeTag(tag), value)
 }
 
@@ -358,13 +355,13 @@ func (table *tableViewData) set(tag string, value any) bool {
 	case Content:
 		switch val := value.(type) {
 		case TableAdapter:
-			table.properties[Content] = value
+			table.properties.Store(Content, value)
 
 		case [][]any:
-			table.properties[Content] = NewSimpleTableAdapter(val)
+			table.properties.Store(Content, NewSimpleTableAdapter(val))
 
 		case [][]string:
-			table.properties[Content] = NewTextTableAdapter(val)
+			table.properties.Store(Content, NewTextTableAdapter(val))
 
 		default:
 			notCompatibleType(tag, value)
@@ -409,7 +406,7 @@ func (table *tableViewData) set(tag string, value any) bool {
 
 	case CellStyle:
 		if style, ok := value.(TableCellStyle); ok {
-			table.properties[tag] = style
+			table.properties.Store(tag, style)
 		} else {
 			notCompatibleType(tag, value)
 			return false
@@ -431,9 +428,9 @@ func (table *tableViewData) set(tag string, value any) bool {
 		switch value := value.(type) {
 		case string:
 			if isConstantName(value) {
-				table.properties[tag] = value
+				table.properties.Store(tag, value)
 			} else if n, err := strconv.Atoi(value); err == nil {
-				table.properties[tag] = n
+				table.properties.Store(tag, n)
 			} else {
 				ErrorLog(err.Error())
 				notCompatibleType(tag, value)
@@ -442,20 +439,20 @@ func (table *tableViewData) set(tag string, value any) bool {
 
 		default:
 			if n, ok := isInt(value); ok {
-				table.properties[tag] = n
+				table.properties.Store(tag, n)
 			}
 		}
 
 	case HeadStyle, FootStyle:
 		switch value := value.(type) {
 		case string:
-			table.properties[tag] = value
+			table.properties.Store(tag, value)
 
 		case Params:
 			if len(value) > 0 {
-				table.properties[tag] = value
+				table.properties.Store(tag, value)
 			} else {
-				delete(table.properties, tag)
+				table.properties.Delete(tag)
 			}
 
 		case DataObject:
@@ -466,9 +463,9 @@ func (table *tableViewData) set(tag string, value any) bool {
 				}
 			}
 			if len(params) > 0 {
-				table.properties[tag] = params
+				table.properties.Store(tag, params)
 			} else {
-				delete(table.properties, tag)
+				table.properties.Delete(tag)
 			}
 
 		case DataNode:
@@ -477,7 +474,7 @@ func (table *tableViewData) set(tag string, value any) bool {
 				return table.set(tag, value.Object())
 
 			case TextNode:
-				table.properties[tag] = value.Text()
+				table.properties.Store(tag, value.Text())
 
 			default:
 				notCompatibleType(tag, value)
@@ -516,10 +513,10 @@ func (table *tableViewData) set(tag string, value any) bool {
 	case AllowSelection:
 		switch value.(type) {
 		case TableAllowCellSelection:
-			table.properties[tag] = value
+			table.properties.Store(tag, value)
 
 		case TableAllowRowSelection:
-			table.properties[tag] = value
+			table.properties.Store(tag, value)
 
 		default:
 			notCompatibleType(tag, value)
@@ -982,8 +979,12 @@ func (table *tableViewData) htmlSubviews(self View, buffer *strings.Builder) {
 							}
 						}
 					}
-
-					if len(view.properties) > 0 {
+					count := 0
+					view.properties.Range(func(key, value any) bool {
+						count++
+						return true
+					})
+					if count > 0 {
 						view.cssStyle(&view, &cssBuilder)
 					}
 

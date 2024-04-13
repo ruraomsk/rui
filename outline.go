@@ -3,6 +3,7 @@ package rui
 import (
 	"fmt"
 	"strings"
+	"sync"
 )
 
 type OutlineProperty interface {
@@ -18,7 +19,7 @@ type outlinePropertyData struct {
 
 func NewOutlineProperty(params Params) OutlineProperty {
 	outline := new(outlinePropertyData)
-	outline.properties = map[string]any{}
+	outline.properties = sync.Map{}
 	for tag, value := range params {
 		outline.Set(tag, value)
 	}
@@ -29,7 +30,7 @@ func (outline *outlinePropertyData) writeString(buffer *strings.Builder, indent 
 	buffer.WriteString("_{ ")
 	comma := false
 	for _, tag := range []string{Style, Width, ColorTag} {
-		if value, ok := outline.properties[tag]; ok {
+		if value, ok := outline.properties.Load(tag); ok {
 			if comma {
 				buffer.WriteString(", ")
 			}
@@ -52,12 +53,10 @@ func (outline *outlinePropertyData) normalizeTag(tag string) string {
 }
 
 func (outline *outlinePropertyData) Remove(tag string) {
-	delete(outline.properties, outline.normalizeTag(tag))
+	outline.properties.Delete(outline.normalizeTag(tag))
 }
 
 func (outline *outlinePropertyData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	if value == nil {
 		outline.Remove(tag)
@@ -134,13 +133,13 @@ func getOutline(properties Properties) OutlineProperty {
 func (style *viewStyle) setOutline(value any) bool {
 	switch value := value.(type) {
 	case OutlineProperty:
-		style.properties[Outline] = value
+		style.properties.Store(Outline, value)
 
 	case ViewOutline:
-		style.properties[Outline] = NewOutlineProperty(Params{Style: value.Style, Width: value.Width, ColorTag: value.Color})
+		style.properties.Store(Outline, NewOutlineProperty(Params{Style: value.Style, Width: value.Width, ColorTag: value.Color}))
 
 	case ViewBorder:
-		style.properties[Outline] = NewOutlineProperty(Params{Style: value.Style, Width: value.Width, ColorTag: value.Color})
+		style.properties.Store(Outline, NewOutlineProperty(Params{Style: value.Style, Width: value.Width, ColorTag: value.Color}))
 
 	case DataObject:
 		outline := NewOutlineProperty(nil)
@@ -149,7 +148,7 @@ func (style *viewStyle) setOutline(value any) bool {
 				outline.Set(tag, text)
 			}
 		}
-		style.properties[Outline] = outline
+		style.properties.Store(Outline, outline)
 
 	default:
 		notCompatibleType(Outline, value)

@@ -199,7 +199,7 @@ func (view *viewData) remove(tag string) {
 		view.viewID = ""
 
 	case TabIndex, "tab-index":
-		delete(view.properties, tag)
+		view.properties.Delete(tag)
 		if view.Focusable() {
 			view.session.updateProperty(view.htmlID(), "tabindex", "0")
 		} else {
@@ -207,11 +207,11 @@ func (view *viewData) remove(tag string) {
 		}
 
 	case UserData:
-		delete(view.properties, tag)
+		view.properties.Delete(tag)
 
 	case Style, StyleDisabled:
-		if _, ok := view.properties[tag]; ok {
-			delete(view.properties, tag)
+		if _, ok := view.properties.Load(tag); ok {
+			view.properties.Delete(tag)
 			view.session.updateProperty(view.htmlID(), "class", view.htmlClass(IsDisabled(view)))
 		}
 
@@ -237,11 +237,11 @@ func (view *viewData) remove(tag string) {
 		view.removeAnimationListener(tag)
 
 	case ResizeEvent, ScrollEvent:
-		delete(view.properties, tag)
+		view.properties.Delete(tag)
 
 	case Content:
-		if _, ok := view.properties[Content]; ok {
-			delete(view.properties, Content)
+		if _, ok := view.properties.Load(Content); ok {
+			view.properties.Delete(Content)
 			updateInnerHTML(view.htmlID(), view.session)
 		}
 
@@ -306,9 +306,6 @@ func (view *viewData) propertyChangedEvent(tag string) {
 }
 
 func (view *viewData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
-
 	return view.set(strings.ToLower(tag), value)
 }
 
@@ -347,7 +344,7 @@ func (view *viewData) set(tag string, value any) bool {
 		}
 
 	case UserData:
-		view.properties[tag] = value
+		view.properties.Store(tag, value)
 
 	case Style, StyleDisabled:
 		text, ok := value.(string)
@@ -355,7 +352,7 @@ func (view *viewData) set(tag string, value any) bool {
 			notCompatibleType(ID, value)
 			return false
 		}
-		view.properties[tag] = text
+		view.properties.Store(tag, text)
 		if view.created {
 			view.session.updateProperty(view.htmlID(), "class", view.htmlClass(IsDisabled(view)))
 		}

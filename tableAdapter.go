@@ -258,18 +258,18 @@ func (table *tableViewData) setLineStyle(tag string, value any) bool {
 		if len(value) > 0 {
 			style := new(simpleTableLineStyle)
 			style.params = value
-			table.properties[tag] = style
+			table.properties.Store(tag, style)
 		} else {
-			delete(table.properties, tag)
+			table.properties.Delete(tag)
 		}
 
 	case DataNode:
 		if params := value.ArrayAsParams(); len(params) > 0 {
 			style := new(simpleTableLineStyle)
 			style.params = params
-			table.properties[tag] = style
+			table.properties.Store(tag, style)
 		} else {
-			delete(table.properties, tag)
+			table.properties.Delete(tag)
 		}
 
 	default:
@@ -281,7 +281,7 @@ func (table *tableViewData) setLineStyle(tag string, value any) bool {
 func (table *tableViewData) setRowStyle(value any) bool {
 	switch value := value.(type) {
 	case TableRowStyle:
-		table.properties[RowStyle] = value
+		table.properties.Store(RowStyle, value)
 	}
 	return table.setLineStyle(RowStyle, value)
 }
@@ -300,7 +300,7 @@ func (table *tableViewData) getRowStyle() TableRowStyle {
 func (table *tableViewData) setColumnStyle(value any) bool {
 	switch value := value.(type) {
 	case TableColumnStyle:
-		table.properties[ColumnStyle] = value
+		table.properties.Store(ColumnStyle, value)
 	}
 	return table.setLineStyle(ColumnStyle, value)
 }

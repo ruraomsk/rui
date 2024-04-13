@@ -167,8 +167,8 @@ func (container *viewsContainerData) remove(tag string) {
 		container.propertyChangedEvent(Content)
 
 	case Disabled:
-		if _, ok := container.properties[Disabled]; ok {
-			delete(container.properties, Disabled)
+		if _, ok := container.properties.Load(Disabled); ok {
+			container.properties.Delete(Disabled)
 			if container.views != nil {
 				for _, view := range container.views {
 					view.Remove(Disabled)

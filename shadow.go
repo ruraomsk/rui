@@ -108,12 +108,10 @@ func parseViewShadow(object DataObject) ViewShadow {
 }
 
 func (shadow *viewShadowData) Remove(tag string) {
-	delete(shadow.properties, strings.ToLower(tag))
+	shadow.properties.Delete(strings.ToLower(tag))
 }
 
 func (shadow *viewShadowData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	if value == nil {
 		shadow.Remove(tag)
@@ -215,7 +213,7 @@ func (shadow *viewShadowData) writeString(buffer *strings.Builder, indent string
 	buffer.WriteString("_{ ")
 	comma := false
 	for _, tag := range shadow.AllTags() {
-		if value, ok := shadow.properties[tag]; ok {
+		if value, ok := shadow.properties.Load(tag); ok {
 			if comma {
 				buffer.WriteString(", ")
 			}
@@ -231,26 +229,26 @@ func (shadow *viewShadowData) writeString(buffer *strings.Builder, indent string
 func (properties *propertyList) setShadow(tag string, value any) bool {
 
 	if value == nil {
-		delete(properties.properties, tag)
+		properties.properties.Delete(tag)
 		return true
 	}
 
 	switch value := value.(type) {
 	case ViewShadow:
-		properties.properties[tag] = []ViewShadow{value}
+		properties.properties.Store(tag, []ViewShadow{value})
 
 	case []ViewShadow:
 		if len(value) == 0 {
-			delete(properties.properties, tag)
+			properties.properties.Delete(tag)
 		} else {
-			properties.properties[tag] = value
+			properties.properties.Store(tag, value)
 		}
 
 	case DataValue:
 		if !value.IsObject() {
 			return false
 		}
-		properties.properties[tag] = []ViewShadow{parseViewShadow(value.Object())}
+		properties.properties.Store(tag, []ViewShadow{parseViewShadow(value.Object())})
 
 	case []DataValue:
 		shadows := []ViewShadow{}
@@ -262,7 +260,7 @@ func (properties *propertyList) setShadow(tag string, value any) bool {
 		if len(shadows) == 0 {
 			return false
 		}
-		properties.properties[tag] = shadows
+		properties.properties.Store(tag, shadows)
 
 	case string:
 		obj := NewDataObject(value)
@@ -270,7 +268,7 @@ func (properties *propertyList) setShadow(tag string, value any) bool {
 			notCompatibleType(tag, value)
 			return false
 		}
-		properties.properties[tag] = []ViewShadow{parseViewShadow(obj)}
+		properties.properties.Store(tag, []ViewShadow{parseViewShadow(obj)})
 
 	default:
 		notCompatibleType(tag, value)

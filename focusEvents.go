@@ -106,7 +106,7 @@ func (view *viewData) setFocusListener(tag string, value any) bool {
 	if listeners == nil {
 		view.removeFocusListener(tag)
 	} else if js, ok := focusEvents[tag]; ok {
-		view.properties[tag] = listeners
+		view.properties.Store(tag, listeners)
 		if view.created {
 			view.session.updateProperty(view.htmlID(), js.jsEvent, js.jsFunc+"(this, event)")
 		}
@@ -117,7 +117,7 @@ func (view *viewData) setFocusListener(tag string, value any) bool {
 }
 
 func (view *viewData) removeFocusListener(tag string) {
-	delete(view.properties, tag)
+	view.properties.Delete(tag)
 	if view.created {
 		if js, ok := focusEvents[tag]; ok {
 			view.session.removeProperty(view.htmlID(), js.jsEvent)

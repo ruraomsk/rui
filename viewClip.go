@@ -123,7 +123,7 @@ func (clip *insetClip) writeString(buffer *strings.Builder, indent string) {
 	buffer.WriteString("inset { ")
 	comma := false
 	for _, tag := range []string{Top, Right, Bottom, Left, Radius} {
-		if value, ok := clip.properties[tag]; ok {
+		if value, ok := clip.properties.Load(tag); ok {
 			if comma {
 				buffer.WriteString(", ")
 			}
@@ -190,7 +190,7 @@ func (clip *circleClip) writeString(buffer *strings.Builder, indent string) {
 	buffer.WriteString("circle { ")
 	comma := false
 	for _, tag := range []string{Radius, X, Y} {
-		if value, ok := clip.properties[tag]; ok {
+		if value, ok := clip.properties.Load(tag); ok {
 			if comma {
 				buffer.WriteString(", ")
 			}
@@ -258,7 +258,7 @@ func (clip *ellipseClip) writeString(buffer *strings.Builder, indent string) {
 	buffer.WriteString("ellipse { ")
 	comma := false
 	for _, tag := range []string{RadiusX, RadiusY, X, Y} {
-		if value, ok := clip.properties[tag]; ok {
+		if value, ok := clip.properties.Load(tag); ok {
 			if comma {
 				buffer.WriteString(", ")
 			}
@@ -504,32 +504,32 @@ func parseClipShape(obj DataObject) ClipShape {
 func (style *viewStyle) setClipShape(tag string, value any) bool {
 	switch value := value.(type) {
 	case ClipShape:
-		style.properties[tag] = value
+		style.properties.Store(tag, value)
 		return true
 
 	case string:
 		if isConstantName(value) {
-			style.properties[tag] = value
+			style.properties.Store(tag, value)
 			return true
 		}
 
 		if obj := NewDataObject(value); obj == nil {
 			if clip := parseClipShape(obj); clip != nil {
-				style.properties[tag] = clip
+				style.properties.Store(tag, clip)
 				return true
 			}
 		}
 
 	case DataObject:
 		if clip := parseClipShape(value); clip != nil {
-			style.properties[tag] = clip
+			style.properties.Store(tag, clip)
 			return true
 		}
 
 	case DataValue:
 		if value.IsObject() {
 			if clip := parseClipShape(value.Object()); clip != nil {
-				style.properties[tag] = clip
+				style.properties.Store(tag, clip)
 				return true
 			}
 		}

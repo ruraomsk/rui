@@ -145,7 +145,7 @@ func (tabsLayout *tabsLayoutData) remove(tag string) {
 
 	case Current:
 		oldCurrent := tabsLayout.currentItem(0)
-		delete(tabsLayout.properties, Current)
+		tabsLayout.properties.Delete(Current)
 		if oldCurrent == 0 {
 			return
 		}
@@ -157,7 +157,7 @@ func (tabsLayout *tabsLayoutData) remove(tag string) {
 		}
 
 	case Tabs:
-		delete(tabsLayout.properties, Tabs)
+		tabsLayout.properties.Delete(Tabs)
 		if tabsLayout.created {
 			htmlID := tabsLayout.htmlID()
 			tabsLayout.session.updateProperty(htmlID, inactiveTabStyle, tabsLayout.inactiveTabStyle())
@@ -167,7 +167,7 @@ func (tabsLayout *tabsLayoutData) remove(tag string) {
 		}
 
 	case TabStyle, CurrentTabStyle:
-		delete(tabsLayout.properties, tag)
+		tabsLayout.properties.Delete(tag)
 		if tabsLayout.created {
 			htmlID := tabsLayout.htmlID()
 			tabsLayout.session.updateProperty(htmlID, inactiveTabStyle, tabsLayout.inactiveTabStyle())
@@ -176,7 +176,7 @@ func (tabsLayout *tabsLayoutData) remove(tag string) {
 		}
 
 	case TabCloseButton:
-		delete(tabsLayout.properties, tag)
+		tabsLayout.properties.Delete(tag)
 		if tabsLayout.created {
 			updateInnerHTML(tabsLayout.htmlID(), tabsLayout.session)
 		}
@@ -190,9 +190,6 @@ func (tabsLayout *tabsLayoutData) remove(tag string) {
 }
 
 func (tabsLayout *tabsLayoutData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
-
 	return tabsLayout.set(strings.ToLower(tag), value)
 }
 
@@ -258,9 +255,9 @@ func (tabsLayout *tabsLayoutData) set(tag string, value any) bool {
 	case TabStyle, CurrentTabStyle, TabBarStyle:
 		if text, ok := value.(string); ok {
 			if text == "" {
-				delete(tabsLayout.properties, tag)
+				tabsLayout.properties.Delete(tag)
 			} else {
-				tabsLayout.properties[tag] = text
+				tabsLayout.properties.Store(tag, text)
 			}
 		} else {
 			notCompatibleType(tag, value)
@@ -599,7 +596,7 @@ func (tabsLayout *tabsLayoutData) Append(view View) {
 		view.SetChangeListener(Icon, tabsLayout.updateIcon)
 		view.SetChangeListener(TabCloseButton, tabsLayout.updateTabCloseButton)
 		if len(tabsLayout.views) == 1 {
-			tabsLayout.properties[Current] = 0
+			tabsLayout.properties.Store(Current, 0)
 			for _, listener := range tabsLayout.tabListener {
 				listener(tabsLayout, 0, -1)
 			}
@@ -615,7 +612,7 @@ func (tabsLayout *tabsLayoutData) Insert(view View, index int) {
 	}
 	if view != nil {
 		if current := tabsLayout.currentItem(0); current >= index {
-			tabsLayout.properties[Current] = current + 1
+			tabsLayout.properties.Store(Current, current+1)
 			defer tabsLayout.propertyChangedEvent(Current)
 		}
 		tabsLayout.viewsContainerData.Insert(view, index)
@@ -662,7 +659,7 @@ func (tabsLayout *tabsLayoutData) RemoveView(index int) View {
 	updateInnerHTML(tabsLayout.parentHTMLID(), tabsLayout.session)
 	tabsLayout.propertyChangedEvent(Content)
 
-	delete(tabsLayout.properties, Current)
+	tabsLayout.properties.Delete(Current)
 	tabsLayout.set(Current, current)
 	return view
 }
@@ -891,7 +888,7 @@ func (tabsLayout *tabsLayoutData) handleCommand(self View, command string, data 
 			if number, err := strconv.Atoi(numberText); err == nil {
 				current := tabsLayout.currentItem(0)
 				if current != number {
-					tabsLayout.properties[Current] = number
+					tabsLayout.properties.Store(Current, number)
 					for _, listener := range tabsLayout.tabListener {
 						listener(tabsLayout, number, current)
 					}

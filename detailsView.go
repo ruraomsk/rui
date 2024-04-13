@@ -69,8 +69,6 @@ func (detailsView *detailsViewData) remove(tag string) {
 }
 
 func (detailsView *detailsViewData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	return detailsView.set(strings.ToLower(tag), value)
 }
@@ -85,15 +83,15 @@ func (detailsView *detailsViewData) set(tag string, value any) bool {
 	case Summary:
 		switch value := value.(type) {
 		case string:
-			detailsView.properties[Summary] = value
+			detailsView.properties.Store(Summary, value)
 
 		case View:
-			detailsView.properties[Summary] = value
+			detailsView.properties.Store(Summary, value)
 			value.setParentID(detailsView.htmlID())
 
 		case DataObject:
 			if view := CreateViewFromObject(detailsView.Session(), value); view != nil {
-				detailsView.properties[Summary] = view
+				detailsView.properties.Store(Summary, view)
 				view.setParentID(detailsView.htmlID())
 			} else {
 				return false
@@ -157,7 +155,7 @@ func (detailsView *detailsViewData) htmlProperties(self View, buffer *strings.Bu
 }
 
 func (detailsView *detailsViewData) htmlSubviews(self View, buffer *strings.Builder) {
-	if value, ok := detailsView.properties[Summary]; ok {
+	if value, ok := detailsView.properties.Load(Summary); ok {
 		switch value := value.(type) {
 		case string:
 			if !GetNotTranslate(detailsView) {
@@ -180,7 +178,7 @@ func (detailsView *detailsViewData) htmlSubviews(self View, buffer *strings.Buil
 func (detailsView *detailsViewData) handleCommand(self View, command string, data DataObject) bool {
 	if command == "details-open" {
 		if n, ok := dataIntProperty(data, "open"); ok {
-			detailsView.properties[Expanded] = (n != 0)
+			detailsView.properties.Store(Expanded, (n != 0))
 			detailsView.propertyChangedEvent(Expanded)
 		}
 		return true

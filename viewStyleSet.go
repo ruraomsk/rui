@@ -8,7 +8,7 @@ func (style *viewStyle) setRange(tag string, value any) bool {
 	switch value := value.(type) {
 	case string:
 		if strings.Contains(value, "@") {
-			style.properties[tag] = value
+			style.properties.Store(tag, value)
 			return true
 		}
 		var r Range
@@ -16,13 +16,13 @@ func (style *viewStyle) setRange(tag string, value any) bool {
 			invalidPropertyValue(tag, value)
 			return false
 		}
-		style.properties[tag] = r
+		style.properties.Store(tag, r)
 
 	case int:
-		style.properties[tag] = Range{First: value, Last: value}
+		style.properties.Store(tag, Range{First: value, Last: value})
 
 	case Range:
-		style.properties[tag] = value
+		style.properties.Store(tag, value)
 
 	default:
 		notCompatibleType(tag, value)
@@ -34,16 +34,16 @@ func (style *viewStyle) setRange(tag string, value any) bool {
 func (style *viewStyle) setBackground(value any) bool {
 	switch value := value.(type) {
 	case BackgroundElement:
-		style.properties[Background] = []BackgroundElement{value}
+		style.properties.Store(Background, []BackgroundElement{value})
 		return true
 
 	case []BackgroundElement:
-		style.properties[Background] = value
+		style.properties.Store(Background, value)
 		return true
 
 	case DataObject:
 		if element := createBackground(value); element != nil {
-			style.properties[Background] = []BackgroundElement{element}
+			style.properties.Store(Background, []BackgroundElement{element})
 			return true
 		}
 
@@ -54,7 +54,7 @@ func (style *viewStyle) setBackground(value any) bool {
 				background = append(background, element)
 			}
 			if len(background) > 0 {
-				style.properties[Background] = background
+				style.properties.Store(Background, background)
 				return true
 			}
 		}
@@ -62,7 +62,7 @@ func (style *viewStyle) setBackground(value any) bool {
 	case string:
 		if obj := ParseDataText(value); obj != nil {
 			if element := createBackground(obj); element != nil {
-				style.properties[Background] = []BackgroundElement{element}
+				style.properties.Store(Background, []BackgroundElement{element})
 				return true
 			}
 		}
@@ -123,9 +123,6 @@ func (style *viewStyle) remove(tag string) {
 }
 
 func (style *viewStyle) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
-
 	return style.set(strings.ToLower(tag), value)
 }
 
@@ -144,7 +141,7 @@ func (style *viewStyle) set(tag string, value any) bool {
 
 	case Border, CellBorder:
 		if border := newBorderProperty(value); border != nil {
-			style.properties[tag] = border
+			style.properties.Store(tag, border)
 			return true
 		}
 
@@ -158,7 +155,7 @@ func (style *viewStyle) set(tag string, value any) bool {
 		if border == nil {
 			border = NewBorder(nil)
 			if border.Set(tag, value) {
-				style.properties[Border] = border
+				style.properties.Store(Border, border)
 				return true
 			}
 			return false
@@ -175,7 +172,7 @@ func (style *viewStyle) set(tag string, value any) bool {
 		if border == nil {
 			border = NewBorder(nil)
 			if border.Set(tag, value) {
-				style.properties[CellBorder] = border
+				style.properties.Store(CellBorder, border)
 				return true
 			}
 			return false
@@ -208,16 +205,16 @@ func (style *viewStyle) set(tag string, value any) bool {
 	case HeadStyle, FootStyle:
 		switch value := value.(type) {
 		case string:
-			style.properties[tag] = value
+			style.properties.Store(tag, value)
 			return true
 
 		case Params:
-			style.properties[tag] = value
+			style.properties.Store(tag, value)
 			return true
 
 		case DataObject:
 			if params := value.ToParams(); len(params) > 0 {
-				style.properties[tag] = params
+				style.properties.Store(tag, params)
 			}
 			return true
 		}
@@ -225,16 +222,16 @@ func (style *viewStyle) set(tag string, value any) bool {
 	case CellStyle, ColumnStyle, RowStyle:
 		switch value := value.(type) {
 		case string:
-			style.properties[tag] = value
+			style.properties.Store(tag, value)
 			return true
 
 		case Params:
-			style.properties[tag] = value
+			style.properties.Store(tag, value)
 			return true
 
 		case DataObject:
 			if params := value.ToParams(); len(params) > 0 {
-				style.properties[tag] = params
+				style.properties.Store(tag, params)
 			}
 			return true
 
@@ -242,14 +239,14 @@ func (style *viewStyle) set(tag string, value any) bool {
 			switch value.Type() {
 			case TextNode:
 				if text := value.Text(); text != "" {
-					style.properties[tag] = text
+					style.properties.Store(tag, text)
 				}
 				return true
 
 			case ObjectNode:
 				if obj := value.Object(); obj != nil {
 					if params := obj.ToParams(); len(params) > 0 {
-						style.properties[tag] = params
+						style.properties.Store(tag, params)
 					}
 					return true
 				}
@@ -266,18 +263,18 @@ func (style *viewStyle) set(tag string, value any) bool {
 		if outline := getOutline(style); outline != nil {
 			return outline.Set(tag, value)
 		}
-		style.properties[Outline] = NewOutlineProperty(Params{tag: value})
+		style.properties.Store(Outline, NewOutlineProperty(Params{tag: value}))
 		return true
 
 	case Orientation:
 		if text, ok := value.(string); ok {
 			switch strings.ToLower(text) {
 			case "vertical":
-				style.properties[Orientation] = TopDownOrientation
+				style.properties.Store(Orientation, TopDownOrientation)
 				return true
 
 			case "horizontal":
-				style.properties[Orientation] = StartToEndOrientation
+				style.properties.Store(Orientation, StartToEndOrientation)
 				return true
 			}
 		}
@@ -286,7 +283,7 @@ func (style *viewStyle) set(tag string, value any) bool {
 		if n, ok := value.(int); ok && n >= 100 && n%100 == 0 {
 			n /= 100
 			if n > 0 && n <= 9 {
-				style.properties[TextWeight] = StartToEndOrientation
+				style.properties.Store(TextWeight, StartToEndOrientation)
 				return true
 			}
 		}
@@ -299,14 +296,14 @@ func (style *viewStyle) set(tag string, value any) bool {
 
 	case ColumnSeparator:
 		if separator := newColumnSeparatorProperty(value); separator != nil {
-			style.properties[ColumnSeparator] = separator
+			style.properties.Store(ColumnSeparator, separator)
 			return true
 		}
 		return false
 
 	case ColumnSeparatorStyle, ColumnSeparatorWidth, ColumnSeparatorColor:
 		var separator ColumnSeparatorProperty = nil
-		if val, ok := style.properties[ColumnSeparator]; ok {
+		if val, ok := style.properties.Load(ColumnSeparator); ok {
 			separator = val.(ColumnSeparatorProperty)
 		}
 		if separator == nil {
@@ -314,7 +311,7 @@ func (style *viewStyle) set(tag string, value any) bool {
 		}
 
 		if separator.Set(tag, value) {
-			style.properties[ColumnSeparator] = separator
+			style.properties.Store(ColumnSeparator, separator)
 			return true
 		}
 		return false
@@ -387,16 +384,16 @@ func (style *viewStyle) set(tag string, value any) bool {
 	case AnimationTag:
 		switch value := value.(type) {
 		case Animation:
-			style.properties[tag] = []Animation{value}
+			style.properties.Store(tag, []Animation{value})
 			return true
 
 		case []Animation:
-			style.properties[tag] = value
+			style.properties.Store(tag, value)
 			return true
 
 		case DataObject:
 			if animation := parseAnimation(value); animation.hasAnimatedProperty() {
-				style.properties[tag] = []Animation{animation}
+				style.properties.Store(tag, []Animation{animation})
 				return true
 			}
 
@@ -416,7 +413,7 @@ func (style *viewStyle) set(tag string, value any) bool {
 				}
 			}
 			if result && len(animations) > 0 {
-				style.properties[tag] = animations
+				style.properties.Store(tag, animations)
 			}
 			return result
 		}

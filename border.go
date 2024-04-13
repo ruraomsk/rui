@@ -3,6 +3,7 @@ package rui
 import (
 	"fmt"
 	"strings"
+	"sync"
 )
 
 const (
@@ -66,7 +67,7 @@ type borderProperty struct {
 
 func newBorderProperty(value any) BorderProperty {
 	border := new(borderProperty)
-	border.properties = map[string]any{}
+	border.properties = sync.Map{}
 
 	if value != nil {
 		switch value := value.(type) {
@@ -84,40 +85,40 @@ func newBorderProperty(value any) BorderProperty {
 			_ = border.setBorderObject(value)
 
 		case ViewBorder:
-			border.properties[Style] = value.Style
-			border.properties[Width] = value.Width
-			border.properties[ColorTag] = value.Color
+			border.properties.Store(Style, value.Style)
+			border.properties.Store(Width, value.Width)
+			border.properties.Store(ColorTag, value.Color)
 
 		case ViewBorders:
 			if value.Left.Style == value.Right.Style &&
 				value.Left.Style == value.Top.Style &&
 				value.Left.Style == value.Bottom.Style {
-				border.properties[Style] = value.Left.Style
+				border.properties.Store(Style, value.Left.Style)
 			} else {
-				border.properties[LeftStyle] = value.Left.Style
-				border.properties[RightStyle] = value.Right.Style
-				border.properties[TopStyle] = value.Top.Style
-				border.properties[BottomStyle] = value.Bottom.Style
+				border.properties.Store(LeftStyle, value.Left.Style)
+				border.properties.Store(RightStyle, value.Right.Style)
+				border.properties.Store(TopStyle, value.Top.Style)
+				border.properties.Store(BottomStyle, value.Bottom.Style)
 			}
 			if value.Left.Width.Equal(value.Right.Width) &&
 				value.Left.Width.Equal(value.Top.Width) &&
 				value.Left.Width.Equal(value.Bottom.Width) {
-				border.properties[Width] = value.Left.Width
+				border.properties.Store(Width, value.Left.Width)
 			} else {
-				border.properties[LeftWidth] = value.Left.Width
-				border.properties[RightWidth] = value.Right.Width
-				border.properties[TopWidth] = value.Top.Width
-				border.properties[BottomWidth] = value.Bottom.Width
+				border.properties.Store(LeftWidth, value.Left.Width)
+				border.properties.Store(RightWidth, value.Right.Width)
+				border.properties.Store(TopWidth, value.Top.Width)
+				border.properties.Store(BottomWidth, value.Bottom.Width)
 			}
 			if value.Left.Color == value.Right.Color &&
 				value.Left.Color == value.Top.Color &&
 				value.Left.Color == value.Bottom.Color {
-				border.properties[ColorTag] = value.Left.Color
+				border.properties.Store(ColorTag, value.Left.Color)
 			} else {
-				border.properties[LeftColor] = value.Left.Color
-				border.properties[RightColor] = value.Right.Color
-				border.properties[TopColor] = value.Top.Color
-				border.properties[BottomColor] = value.Bottom.Color
+				border.properties.Store(LeftColor, value.Left.Color)
+				border.properties.Store(RightColor, value.Right.Color)
+				border.properties.Store(TopColor, value.Top.Color)
+				border.properties.Store(BottomColor, value.Bottom.Color)
 			}
 
 		default:
@@ -131,7 +132,7 @@ func newBorderProperty(value any) BorderProperty {
 // NewBorder creates the new BorderProperty
 func NewBorder(params Params) BorderProperty {
 	border := new(borderProperty)
-	border.properties = map[string]any{}
+	border.properties = sync.Map{}
 	if params != nil {
 		for _, tag := range []string{Style, Width, ColorTag, Left, Right, Top, Bottom,
 			LeftStyle, RightStyle, TopStyle, BottomStyle,
@@ -224,15 +225,15 @@ func (border *borderProperty) writeString(buffer *strings.Builder, indent string
 	}
 
 	for _, tag := range []string{Style, Width, ColorTag} {
-		if value, ok := border.properties[tag]; ok {
+		if value, ok := border.properties.Load(tag); ok {
 			write(tag, value)
 		}
 	}
 
 	for _, side := range []string{Top, Right, Bottom, Left} {
-		style, okStyle := border.properties[side+"-"+Style]
-		width, okWidth := border.properties[side+"-"+Width]
-		color, okColor := border.properties[side+"-"+ColorTag]
+		style, okStyle := border.properties.Load(side + "-" + Style)
+		width, okWidth := border.properties.Load(side + "-" + Width)
+		color, okColor := border.properties.Load(side + "-" + ColorTag)
 		if okStyle || okWidth || okColor {
 			if comma {
 				buffer.WriteString(", ")
@@ -371,17 +372,17 @@ func (border *borderProperty) Remove(tag string) {
 	switch tag {
 	case Style:
 		for _, t := range []string{tag, TopStyle, RightStyle, BottomStyle, LeftStyle} {
-			delete(border.properties, t)
+			border.properties.Delete(t)
 		}
 
 	case Width:
 		for _, t := range []string{tag, TopWidth, RightWidth, BottomWidth, LeftWidth} {
-			delete(border.properties, t)
+			border.properties.Delete(t)
 		}
 
 	case ColorTag:
 		for _, t := range []string{tag, TopColor, RightColor, BottomColor, LeftColor} {
-			delete(border.properties, t)
+			border.properties.Delete(t)
 		}
 
 	case Left, Right, Top, Bottom:
@@ -390,36 +391,36 @@ func (border *borderProperty) Remove(tag string) {
 		border.Remove(tag + "-color")
 
 	case LeftStyle, RightStyle, TopStyle, BottomStyle:
-		delete(border.properties, tag)
-		if style, ok := border.properties[Style]; ok && style != nil {
+		border.properties.Delete(tag)
+		if style, ok := border.properties.Load(Style); ok && style != nil {
 			for _, t := range []string{TopStyle, RightStyle, BottomStyle, LeftStyle} {
 				if t != tag {
-					if _, ok := border.properties[t]; !ok {
-						border.properties[t] = style
+					if _, ok := border.properties.Load(t); !ok {
+						border.properties.Store(t, style)
 					}
 				}
 			}
 		}
 
 	case LeftWidth, RightWidth, TopWidth, BottomWidth:
-		delete(border.properties, tag)
-		if width, ok := border.properties[Width]; ok && width != nil {
+		border.properties.Delete(tag)
+		if width, ok := border.properties.Load(Width); ok && width != nil {
 			for _, t := range []string{TopWidth, RightWidth, BottomWidth, LeftWidth} {
 				if t != tag {
-					if _, ok := border.properties[t]; !ok {
-						border.properties[t] = width
+					if _, ok := border.properties.Load(t); !ok {
+						border.properties.Store(t, width)
 					}
 				}
 			}
 		}
 
 	case LeftColor, RightColor, TopColor, BottomColor:
-		delete(border.properties, tag)
-		if color, ok := border.properties[ColorTag]; ok && color != nil {
+		border.properties.Delete(tag)
+		if color, ok := border.properties.Load(ColorTag); ok && color != nil {
 			for _, t := range []string{TopColor, RightColor, BottomColor, LeftColor} {
 				if t != tag {
-					if _, ok := border.properties[t]; !ok {
-						border.properties[t] = color
+					if _, ok := border.properties.Load(t); !ok {
+						border.properties.Store(t, color)
 					}
 				}
 			}
@@ -431,8 +432,6 @@ func (border *borderProperty) Remove(tag string) {
 }
 
 func (border *borderProperty) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	if value == nil {
 		border.Remove(tag)
@@ -445,7 +444,7 @@ func (border *borderProperty) Set(tag string, value any) bool {
 	case Style:
 		if border.setEnumProperty(Style, value, enumProperties[BorderStyle].values) {
 			for _, side := range []string{TopStyle, RightStyle, BottomStyle, LeftStyle} {
-				delete(border.properties, side)
+				border.properties.Delete(side)
 			}
 			return true
 		}
@@ -453,7 +452,7 @@ func (border *borderProperty) Set(tag string, value any) bool {
 	case Width:
 		if border.setSizeProperty(Width, value) {
 			for _, side := range []string{TopWidth, RightWidth, BottomWidth, LeftWidth} {
-				delete(border.properties, side)
+				border.properties.Delete(side)
 			}
 			return true
 		}
@@ -461,7 +460,7 @@ func (border *borderProperty) Set(tag string, value any) bool {
 	case ColorTag:
 		if border.setColorProperty(ColorTag, value) {
 			for _, side := range []string{TopColor, RightColor, BottomColor, LeftColor} {
-				delete(border.properties, side)
+				border.properties.Delete(side)
 			}
 			return true
 		}
@@ -488,22 +487,22 @@ func (border *borderProperty) Set(tag string, value any) bool {
 		case BorderProperty:
 			styleTag := tag + "-" + Style
 			if style := value.Get(styleTag); value != nil {
-				border.properties[styleTag] = style
+				border.properties.Store(styleTag, style)
 			}
 			colorTag := tag + "-" + ColorTag
 			if color := value.Get(colorTag); value != nil {
-				border.properties[colorTag] = color
+				border.properties.Store(colorTag, color)
 			}
 			widthTag := tag + "-" + Width
 			if width := value.Get(widthTag); value != nil {
-				border.properties[widthTag] = width
+				border.properties.Store(widthTag, width)
 			}
 			return true
 
 		case ViewBorder:
-			border.properties[tag+"-"+Style] = value.Style
-			border.properties[tag+"-"+Width] = value.Width
-			border.properties[tag+"-"+ColorTag] = value.Color
+			border.properties.Store(tag+"-"+Style, value.Style)
+			border.properties.Store(tag+"-"+Width, value.Width)
+			border.properties.Store(tag+"-"+ColorTag, value.Color)
 			return true
 		}
 		fallthrough
@@ -518,47 +517,50 @@ func (border *borderProperty) Set(tag string, value any) bool {
 func (border *borderProperty) Get(tag string) any {
 	tag = border.normalizeTag(tag)
 
-	if result, ok := border.properties[tag]; ok {
+	if result, ok := border.properties.Load(tag); ok {
 		return result
 	}
 
 	switch tag {
 	case Left, Right, Top, Bottom:
 		result := newBorderProperty(nil)
-		if style, ok := border.properties[tag+"-"+Style]; ok {
+		if style, ok := border.properties.Load(tag + "-" + Style); ok {
 			result.Set(Style, style)
-		} else if style, ok := border.properties[Style]; ok {
+		} else if style, ok := border.properties.Load(Style); ok {
 			result.Set(Style, style)
 		}
-		if width, ok := border.properties[tag+"-"+Width]; ok {
+		if width, ok := border.properties.Load(tag + "-" + Width); ok {
 			result.Set(Width, width)
-		} else if width, ok := border.properties[Width]; ok {
+		} else if width, ok := border.properties.Load(Width); ok {
 			result.Set(Width, width)
 		}
-		if color, ok := border.properties[tag+"-"+ColorTag]; ok {
+		if color, ok := border.properties.Load(tag + "-" + ColorTag); ok {
 			result.Set(ColorTag, color)
-		} else if color, ok := border.properties[ColorTag]; ok {
+		} else if color, ok := border.properties.Load(ColorTag); ok {
 			result.Set(ColorTag, color)
 		}
 		return result
 
 	case LeftStyle, RightStyle, TopStyle, BottomStyle:
-		if style, ok := border.properties[tag]; ok {
+		if style, ok := border.properties.Load(tag); ok {
 			return style
 		}
-		return border.properties[Style]
+		v, _ := border.properties.Load(Style)
+		return v
 
 	case LeftWidth, RightWidth, TopWidth, BottomWidth:
-		if width, ok := border.properties[tag]; ok {
+		if width, ok := border.properties.Load(tag); ok {
 			return width
 		}
-		return border.properties[Width]
+		v, _ := border.properties.Load(Width)
+		return v
 
 	case LeftColor, RightColor, TopColor, BottomColor:
-		if color, ok := border.properties[tag]; ok {
+		if color, ok := border.properties.Load(tag); ok {
 			return color
 		}
-		return border.properties[ColorTag]
+		v, _ := border.properties.Load(ColorTag)
+		return v
 	}
 
 	return nil
@@ -580,7 +582,7 @@ func (border *borderProperty) delete(tag string) {
 
 	case Left, Right, Top, Bottom:
 		if border.Get(Style) != nil {
-			border.properties[tag+"-"+Style] = 0
+			border.properties.Store(tag+"-"+Style, 0)
 			remove = []string{tag + "-" + ColorTag, tag + "-" + Width}
 		} else {
 			remove = []string{tag + "-" + Style, tag + "-" + ColorTag, tag + "-" + Width}
@@ -588,28 +590,28 @@ func (border *borderProperty) delete(tag string) {
 
 	case LeftStyle, RightStyle, TopStyle, BottomStyle:
 		if border.Get(Style) != nil {
-			border.properties[tag] = 0
+			border.properties.Store(tag, 0)
 		} else {
 			remove = []string{tag}
 		}
 
 	case LeftWidth, RightWidth, TopWidth, BottomWidth:
 		if border.Get(Width) != nil {
-			border.properties[tag] = AutoSize()
+			border.properties.Store(tag, AutoSize())
 		} else {
 			remove = []string{tag}
 		}
 
 	case LeftColor, RightColor, TopColor, BottomColor:
 		if border.Get(ColorTag) != nil {
-			border.properties[tag] = 0
+			border.properties.Store(tag, 0)
 		} else {
 			remove = []string{tag}
 		}
 	}
 
 	for _, tag := range remove {
-		delete(border.properties, tag)
+		border.properties.Delete(tag)
 	}
 }
 

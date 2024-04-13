@@ -60,8 +60,6 @@ func (button *checkboxData) Get(tag string) any {
 }
 
 func (button *checkboxData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 	return button.set(tag, value)
 }
 
@@ -130,12 +128,12 @@ func (button *checkboxData) remove(tag string) {
 	switch tag {
 	case ClickEvent:
 		if !button.viewsContainerData.set(ClickEvent, checkboxClickListener) {
-			delete(button.properties, tag)
+			button.properties.Delete(tag)
 		}
 
 	case KeyDownEvent:
 		if !button.viewsContainerData.set(KeyDownEvent, checkboxKeyListener) {
-			delete(button.properties, tag)
+			button.properties.Delete(tag)
 		}
 
 	case CheckboxChangedEvent:
@@ -145,13 +143,13 @@ func (button *checkboxData) remove(tag string) {
 
 	case Checked:
 		oldChecked := button.checked()
-		delete(button.properties, tag)
+		button.properties.Delete(tag)
 		if button.created && oldChecked {
 			button.changedCheckboxState(false)
 		}
 
 	case CheckboxHorizontalAlign, CheckboxVerticalAlign:
-		delete(button.properties, tag)
+		button.properties.Delete(tag)
 		if button.created {
 			htmlID := button.htmlID()
 			updateCSSStyle(htmlID, button.session)
@@ -159,13 +157,13 @@ func (button *checkboxData) remove(tag string) {
 		}
 
 	case VerticalAlign:
-		delete(button.properties, tag)
+		button.properties.Delete(tag)
 		if button.created {
 			button.session.updateCSSProperty(button.htmlID()+"content", "align-items", button.cssVerticalAlign())
 		}
 
 	case HorizontalAlign:
-		delete(button.properties, tag)
+		button.properties.Delete(tag)
 		if button.created {
 			button.session.updateCSSProperty(button.htmlID()+"content", "justify-items", button.cssHorizontalAlign())
 		}

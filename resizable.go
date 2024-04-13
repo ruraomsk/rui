@@ -77,7 +77,7 @@ func (resizable *resizableData) remove(tag string) {
 	switch tag {
 	case Side:
 		oldSide := resizable.getSide()
-		delete(resizable.properties, Side)
+		resizable.properties.Delete(Side)
 		if oldSide != resizable.getSide() {
 			if resizable.created {
 				updateInnerHTML(resizable.htmlID(), resizable.Session())
@@ -88,7 +88,7 @@ func (resizable *resizableData) remove(tag string) {
 
 	case ResizeBorderWidth:
 		w := resizable.resizeBorderWidth()
-		delete(resizable.properties, ResizeBorderWidth)
+		resizable.properties.Delete(ResizeBorderWidth)
 		if !w.Equal(resizable.resizeBorderWidth()) {
 			resizable.updateResizeBorderWidth()
 			resizable.propertyChangedEvent(tag)
@@ -109,8 +109,6 @@ func (resizable *resizableData) remove(tag string) {
 }
 
 func (resizable *resizableData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	return resizable.set(strings.ToLower(tag), value)
 }
@@ -243,7 +241,7 @@ func (resizable *resizableData) setSide(value any) bool {
 	case string:
 		if n, err := strconv.Atoi(value); err == nil {
 			if n >= 1 && n <= AllSides {
-				resizable.properties[Side] = n
+				resizable.properties.Store(Side, n)
 				return true
 			}
 			return false
@@ -282,26 +280,26 @@ func (resizable *resizableData) setSide(value any) bool {
 				for i := 1; i < len(values); i++ {
 					value += "|" + values[i]
 				}
-				resizable.properties[Side] = value
+				resizable.properties.Store(Side, value)
 				return true
 			}
 
 			if sides >= 1 && sides <= AllSides {
-				resizable.properties[Side] = sides
+				resizable.properties.Store(Side, sides)
 				return true
 			}
 
 		} else if value[0] == '@' {
-			resizable.properties[Side] = value
+			resizable.properties.Store(Side, value)
 			return true
 		} else if n, ok := validValues[value]; ok {
-			resizable.properties[Side] = n
+			resizable.properties.Store(Side, n)
 			return true
 		}
 
 	case int:
 		if value >= 1 && value <= AllSides {
-			resizable.properties[Side] = value
+			resizable.properties.Store(Side, value)
 			return true
 		} else {
 			ErrorLogF(`Invalid value %d of "side" property`, value)
@@ -311,7 +309,7 @@ func (resizable *resizableData) setSide(value any) bool {
 	default:
 		if n, ok := isInt(value); ok {
 			if n >= 1 && n <= AllSides {
-				resizable.properties[Side] = n
+				resizable.properties.Store(Side, n)
 				return true
 			} else {
 				ErrorLogF(`Invalid value %d of "side" property`, n)

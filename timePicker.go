@@ -75,27 +75,27 @@ func (picker *timePickerData) remove(tag string) {
 		return
 
 	case TimePickerMin:
-		delete(picker.properties, TimePickerMin)
+		picker.properties.Delete(TimePickerMin)
 		if picker.created {
 			picker.session.removeProperty(picker.htmlID(), Min)
 		}
 
 	case TimePickerMax:
-		delete(picker.properties, TimePickerMax)
+		picker.properties.Delete(TimePickerMax)
 		if picker.created {
 			picker.session.removeProperty(picker.htmlID(), Max)
 		}
 
 	case TimePickerStep:
-		delete(picker.properties, TimePickerStep)
+		picker.properties.Delete(TimePickerStep)
 		if picker.created {
 			picker.session.removeProperty(picker.htmlID(), Step)
 		}
 
 	case TimePickerValue:
-		if _, ok := picker.properties[TimePickerValue]; ok {
+		if _, ok := picker.properties.Load(TimePickerValue); ok {
 			oldTime := GetTimePickerValue(picker)
-			delete(picker.properties, TimePickerValue)
+			picker.properties.Delete(TimePickerValue)
 			time := GetTimePickerValue(picker)
 			if picker.created {
 				picker.session.callFunc("setInputValue", picker.htmlID(), time.Format(timeFormat))
@@ -115,9 +115,6 @@ func (picker *timePickerData) remove(tag string) {
 }
 
 func (picker *timePickerData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
-
 	return picker.set(picker.normalizeTag(tag), value)
 }
 
@@ -130,7 +127,7 @@ func (picker *timePickerData) set(tag string, value any) bool {
 	setTimeValue := func(tag string) (time.Time, bool) {
 		switch value := value.(type) {
 		case time.Time:
-			picker.properties[tag] = value
+			picker.properties.Store(tag, value)
 			return value, true
 
 		case string:
@@ -156,7 +153,7 @@ func (picker *timePickerData) set(tag string, value any) bool {
 				}
 
 				if time, err := time.Parse(format, text); err == nil {
-					picker.properties[tag] = value
+					picker.properties.Store(tag, value)
 					return time, true
 				} else {
 					ErrorLog(err.Error())
@@ -307,7 +304,7 @@ func (picker *timePickerData) handleCommand(self View, command string, data Data
 		if text, ok := data.PropertyValue("text"); ok {
 			if value, err := time.Parse(timeFormat, text); err == nil {
 				oldValue := GetTimePickerValue(picker)
-				picker.properties[TimePickerValue] = value
+				picker.properties.Store(TimePickerValue, value)
 				if value != oldValue {
 					for _, listener := range picker.timeChangedListeners {
 						listener(picker, value, oldValue)

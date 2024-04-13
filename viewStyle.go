@@ -148,7 +148,7 @@ func split4Values(text string) []string {
 }
 
 func (style *viewStyle) backgroundCSS(session Session) string {
-	if value, ok := style.properties[Background]; ok {
+	if value, ok := style.properties.Load(Background); ok {
 		if backgrounds, ok := value.([]BackgroundElement); ok {
 			buffer := allocStringBuilder()
 			defer freeStringBuilder(buffer)
@@ -305,7 +305,7 @@ func (style *viewStyle) cssViewStyle(builder cssBuilder, session Session) {
 		builder.add("text-shadow", css)
 	}
 
-	if value, ok := style.properties[ColumnSeparator]; ok {
+	if value, ok := style.properties.Load(ColumnSeparator); ok {
 		if separator, ok := value.(ColumnSeparatorProperty); ok {
 			if css := separator.cssValue(session); css != "" {
 				builder.add("column-rule", css)
@@ -526,13 +526,13 @@ func (style *viewStyle) get(tag string) any {
 		return getRadiusElement(style, tag)
 
 	case ColumnSeparator:
-		if val, ok := style.properties[ColumnSeparator]; ok {
+		if val, ok := style.properties.Load(ColumnSeparator); ok {
 			return val.(ColumnSeparatorProperty)
 		}
 		return nil
 
 	case ColumnSeparatorStyle, ColumnSeparatorWidth, ColumnSeparatorColor:
-		if val, ok := style.properties[ColumnSeparator]; ok {
+		if val, ok := style.properties.Load(ColumnSeparator); ok {
 			separator := val.(ColumnSeparatorProperty)
 			return separator.Get(tag)
 		}

@@ -6,8 +6,6 @@ import (
 	"sync"
 )
 
-var mutexProperties sync.Mutex
-
 // Properties interface of properties map
 type Properties interface {
 	// Get returns a value of the property with name defined by the argument.
@@ -28,11 +26,10 @@ type Properties interface {
 }
 
 type propertyList struct {
-	properties map[string]any
+	properties sync.Map
 }
 
 func (properties *propertyList) init() {
-	properties.properties = map[string]any{}
 }
 
 func (properties *propertyList) Get(tag string) any {
@@ -40,45 +37,34 @@ func (properties *propertyList) Get(tag string) any {
 }
 
 func (properties *propertyList) getRaw(tag string) any {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
-	if value, ok := properties.properties[tag]; ok {
+	if value, ok := properties.properties.Load(tag); ok {
 		return value
 	}
 	return nil
 }
 
 func (properties *propertyList) setRaw(tag string, value any) {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
-	properties.properties[tag] = value
+	properties.properties.Store(tag, value)
 }
 
 func (properties *propertyList) Remove(tag string) {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
-	delete(properties.properties, strings.ToLower(tag))
+	properties.properties.Delete(strings.ToLower(tag))
 }
 
 func (properties *propertyList) remove(tag string) {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
-	delete(properties.properties, tag)
+	properties.properties.Delete(tag)
 }
 
 func (properties *propertyList) Clear() {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
-	properties.properties = map[string]any{}
+	properties.properties = sync.Map{}
 }
 
 func (properties *propertyList) AllTags() []string {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
-	tags := make([]string, 0, len(properties.properties))
-	for t := range properties.properties {
-		tags = append(tags, t)
-	}
+	tags := make([]string, 0)
+	properties.properties.Range(func(key, value any) bool {
+		tags = append(tags, key.(string))
+		return true
+	})
 	sort.Strings(tags)
 	return tags
 }

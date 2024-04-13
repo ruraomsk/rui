@@ -115,8 +115,6 @@ func (columnLayout *columnLayoutData) remove(tag string) {
 }
 
 func (columnLayout *columnLayoutData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	return columnLayout.set(columnLayout.normalizeTag(tag), value)
 }
@@ -136,7 +134,7 @@ func (columnLayout *columnLayoutData) set(tag string, value any) bool {
 		case ColumnSeparator:
 			css := ""
 			session := columnLayout.Session()
-			if val, ok := columnLayout.properties[ColumnSeparator]; ok {
+			if val, ok := columnLayout.properties.Load(ColumnSeparator); ok {
 				separator := val.(ColumnSeparatorProperty)
 				css = separator.cssValue(columnLayout.Session())
 			}

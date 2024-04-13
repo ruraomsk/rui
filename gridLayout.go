@@ -55,11 +55,11 @@ func (style *viewStyle) setGridCellSize(tag string, value any) bool {
 					return false
 				}
 			}
-			style.properties[tag] = sizes
+			style.properties.Store(tag, sizes)
 		} else if isConstantName(values[0]) {
-			style.properties[tag] = values[0]
+			style.properties.Store(tag, values[0])
 		} else if size, err := stringToSizeUnit(values[0]); err == nil {
-			style.properties[tag] = size
+			style.properties.Store(tag, size)
 		} else {
 			invalidPropertyValue(tag, value)
 			return false
@@ -71,7 +71,7 @@ func (style *viewStyle) setGridCellSize(tag string, value any) bool {
 	case CellWidth, CellHeight:
 		switch value := value.(type) {
 		case SizeUnit, []SizeUnit:
-			style.properties[tag] = value
+			style.properties.Store(tag, value)
 
 		case string:
 			if !setValues(strings.Split(value, ",")) {
@@ -128,7 +128,7 @@ func (style *viewStyle) setGridCellSize(tag string, value any) bool {
 					return false
 				}
 			}
-			style.properties[tag] = sizes
+			style.properties.Store(tag, sizes)
 
 		default:
 			notCompatibleType(tag, value)
@@ -242,8 +242,6 @@ func (gridLayout *gridLayoutData) remove(tag string) {
 }
 
 func (gridLayout *gridLayoutData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	return gridLayout.set(gridLayout.normalizeTag(tag), value)
 }

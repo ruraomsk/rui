@@ -186,8 +186,6 @@ func (player *mediaPlayerData) remove(tag string) {
 }
 
 func (player *mediaPlayerData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 	return player.set(strings.ToLower(tag), value)
 }
 
@@ -209,9 +207,9 @@ func (player *mediaPlayerData) set(tag string, value any) bool {
 		ProgressEvent, SeekedEvent, SeekingEvent, StalledEvent, SuspendEvent, WaitingEvent:
 		if listeners, ok := valueToNoParamListeners[MediaPlayer](value); ok {
 			if listeners == nil {
-				delete(player.properties, tag)
+				player.properties.Delete(tag)
 			} else {
-				player.properties[tag] = listeners
+				player.properties.Store(tag, listeners)
 			}
 			player.propertyChanged(tag)
 			player.propertyChangedEvent(tag)
@@ -222,9 +220,9 @@ func (player *mediaPlayerData) set(tag string, value any) bool {
 	case DurationChangedEvent, RateChangedEvent, TimeUpdateEvent, VolumeChangedEvent:
 		if listeners, ok := valueToEventListeners[MediaPlayer, float64](value); ok {
 			if listeners == nil {
-				delete(player.properties, tag)
+				player.properties.Delete(tag)
 			} else {
-				player.properties[tag] = listeners
+				player.properties.Store(tag, listeners)
 			}
 			player.propertyChanged(tag)
 			player.propertyChangedEvent(tag)
@@ -235,9 +233,9 @@ func (player *mediaPlayerData) set(tag string, value any) bool {
 	case PlayerErrorEvent:
 		if listeners, ok := valueToPlayerErrorListeners(value); ok {
 			if listeners == nil {
-				delete(player.properties, tag)
+				player.properties.Delete(tag)
 			} else {
-				player.properties[tag] = listeners
+				player.properties.Store(tag, listeners)
 			}
 			player.propertyChanged(tag)
 			player.propertyChangedEvent(tag)
@@ -263,13 +261,13 @@ func (player *mediaPlayerData) setSource(value any) bool {
 	switch value := value.(type) {
 	case string:
 		src := MediaSource{Url: value, MimeType: ""}
-		player.properties[Source] = []MediaSource{src}
+		player.properties.Store(Source, []MediaSource{src})
 
 	case MediaSource:
-		player.properties[Source] = []MediaSource{value}
+		player.properties.Store(Source, []MediaSource{value})
 
 	case []MediaSource:
-		player.properties[Source] = value
+		player.properties.Store(Source, value)
 
 	case DataObject:
 		url, ok := value.PropertyValue("src")
@@ -280,7 +278,7 @@ func (player *mediaPlayerData) setSource(value any) bool {
 
 		mimeType, _ := value.PropertyValue("mime-type")
 		src := MediaSource{Url: url, MimeType: mimeType}
-		player.properties[Source] = []MediaSource{src}
+		player.properties.Store(Source, []MediaSource{src})
 
 	case []DataValue:
 		src := []MediaSource{}
@@ -303,7 +301,7 @@ func (player *mediaPlayerData) setSource(value any) bool {
 			invalidPropertyValue(Source, value)
 			return false
 		}
-		player.properties[Source] = src
+		player.properties.Store(Source, src)
 
 	default:
 		notCompatibleType(Source, value)

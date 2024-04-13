@@ -2,6 +2,7 @@ package rui
 
 import (
 	"strings"
+	"sync"
 )
 
 type backgroundConicGradient struct {
@@ -21,7 +22,7 @@ type BackgroundGradientAngle struct {
 // NewBackgroundConicGradient creates the new background conic gradient
 func NewBackgroundConicGradient(params Params) BackgroundElement {
 	result := new(backgroundConicGradient)
-	result.properties = map[string]any{}
+	result.properties = sync.Map{}
 	for tag, value := range params {
 		result.Set(tag, value)
 	}
@@ -120,9 +121,10 @@ func (gradient *backgroundConicGradient) Tag() string {
 
 func (image *backgroundConicGradient) Clone() BackgroundElement {
 	result := NewBackgroundConicGradient(nil)
-	for tag, value := range image.properties {
-		result.setRaw(tag, value)
-	}
+	image.properties.Range(func(key, value any) bool {
+		result.setRaw(key.(string), value)
+		return true
+	})
 	return result
 }
 
@@ -140,8 +142,6 @@ func (gradient *backgroundConicGradient) normalizeTag(tag string) string {
 }
 
 func (gradient *backgroundConicGradient) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	tag = gradient.normalizeTag(tag)
 	switch tag {
@@ -221,25 +221,25 @@ func (gradient *backgroundConicGradient) parseGradientText(value string) []Backg
 
 func (gradient *backgroundConicGradient) setGradient(value any) bool {
 	if value == nil {
-		delete(gradient.properties, Gradient)
+		gradient.properties.Delete(Gradient)
 		return true
 	}
 
 	switch value := value.(type) {
 	case string:
 		if value == "" {
-			delete(gradient.properties, Gradient)
+			gradient.properties.Delete(Gradient)
 			return true
 		}
 
 		if strings.Contains(value, ",") || strings.Contains(value, " ") {
 			if vector := gradient.parseGradientText(value); vector != nil {
-				gradient.properties[Gradient] = vector
+				gradient.properties.Store(Gradient, vector)
 				return true
 			}
 			return false
 		} else if value[0] == '@' {
-			gradient.properties[Gradient] = value
+			gradient.properties.Store(Gradient, value)
 			return true
 		}
 
@@ -259,7 +259,7 @@ func (gradient *backgroundConicGradient) setGradient(value any) bool {
 				return false
 			}
 		}
-		gradient.properties[Gradient] = value
+		gradient.properties.Store(Gradient, value)
 		return true
 	}
 	return false
@@ -272,7 +272,7 @@ func (gradient *backgroundConicGradient) Get(tag string) any {
 func (gradient *backgroundConicGradient) cssStyle(session Session) string {
 
 	points := []BackgroundGradientAngle{}
-	if value, ok := gradient.properties[Gradient]; ok {
+	if value, ok := gradient.properties.Load(Gradient); ok {
 		switch value := value.(type) {
 		case string:
 			if text, ok := session.resolveConstants(value); ok && text != "" {

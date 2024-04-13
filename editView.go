@@ -94,11 +94,11 @@ func (edit *editViewData) Remove(tag string) {
 }
 
 func (edit *editViewData) remove(tag string) {
-	_, exists := edit.properties[tag]
+	_, exists := edit.properties.Load(tag)
 	switch tag {
 	case Hint:
 		if exists {
-			delete(edit.properties, Hint)
+			edit.properties.Delete(Hint)
 			if edit.created {
 				edit.session.removeProperty(edit.htmlID(), "placeholder")
 			}
@@ -107,7 +107,7 @@ func (edit *editViewData) remove(tag string) {
 
 	case MaxLength:
 		if exists {
-			delete(edit.properties, MaxLength)
+			edit.properties.Delete(MaxLength)
 			if edit.created {
 				edit.session.removeProperty(edit.htmlID(), "maxlength")
 			}
@@ -116,7 +116,7 @@ func (edit *editViewData) remove(tag string) {
 
 	case ReadOnly, Spellcheck:
 		if exists {
-			delete(edit.properties, tag)
+			edit.properties.Delete(tag)
 			if edit.created {
 				edit.session.updateProperty(edit.htmlID(), tag, false)
 			}
@@ -132,7 +132,7 @@ func (edit *editViewData) remove(tag string) {
 	case Text:
 		if exists {
 			oldText := GetText(edit)
-			delete(edit.properties, tag)
+			edit.properties.Delete(tag)
 			if oldText != "" {
 				edit.textChanged("", oldText)
 				if edit.created {
@@ -144,7 +144,7 @@ func (edit *editViewData) remove(tag string) {
 	case EditViewPattern:
 		if exists {
 			oldText := GetEditViewPattern(edit)
-			delete(edit.properties, tag)
+			edit.properties.Delete(tag)
 			if oldText != "" {
 				if edit.created {
 					edit.session.removeProperty(edit.htmlID(), Pattern)
@@ -156,7 +156,7 @@ func (edit *editViewData) remove(tag string) {
 	case EditViewType:
 		if exists {
 			oldType := GetEditViewType(edit)
-			delete(edit.properties, tag)
+			edit.properties.Delete(tag)
 			if oldType != 0 {
 				if edit.created {
 					updateInnerHTML(edit.parentHTMLID(), edit.session)
@@ -168,7 +168,7 @@ func (edit *editViewData) remove(tag string) {
 	case EditWrap:
 		if exists {
 			oldWrap := IsEditViewWrap(edit)
-			delete(edit.properties, tag)
+			edit.properties.Delete(tag)
 			if GetEditViewType(edit) == MultiLineText {
 				if wrap := IsEditViewWrap(edit); wrap != oldWrap {
 					if edit.created {
@@ -190,8 +190,6 @@ func (edit *editViewData) remove(tag string) {
 }
 
 func (edit *editViewData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	return edit.set(edit.normalizeTag(tag), value)
 }
@@ -206,7 +204,7 @@ func (edit *editViewData) set(tag string, value any) bool {
 	case Text:
 		oldText := GetText(edit)
 		if text, ok := value.(string); ok {
-			edit.properties[Text] = text
+			edit.properties.Store(Text, text)
 			if text = GetText(edit); oldText != text {
 				edit.textChanged(text, oldText)
 				if edit.created {
@@ -224,7 +222,7 @@ func (edit *editViewData) set(tag string, value any) bool {
 	case Hint:
 		oldText := GetHint(edit)
 		if text, ok := value.(string); ok {
-			edit.properties[Hint] = text
+			edit.properties.Store(Hint, text)
 			if text = GetHint(edit); oldText != text {
 				if edit.created {
 					if text != "" {
@@ -283,7 +281,7 @@ func (edit *editViewData) set(tag string, value any) bool {
 	case EditViewPattern:
 		oldText := GetEditViewPattern(edit)
 		if text, ok := value.(string); ok {
-			edit.properties[EditViewPattern] = text
+			edit.properties.Store(EditViewPattern, text)
 			if text = GetEditViewPattern(edit); oldText != text {
 				if edit.created {
 					if text != "" {
@@ -363,7 +361,7 @@ func (edit *editViewData) AppendText(text string) {
 			if textValue, ok := value.(string); ok {
 				oldText := textValue
 				textValue += text
-				edit.properties[Text] = textValue
+				edit.properties.Store(Text, textValue)
 				edit.session.callFunc("appendToInnerHTML", edit.htmlID(), text)
 				edit.textChanged(textValue, oldText)
 				return
@@ -487,7 +485,7 @@ func (edit *editViewData) handleCommand(self View, command string, data DataObje
 	case "textChanged":
 		oldText := GetText(edit)
 		if text, ok := data.PropertyValue("text"); ok {
-			edit.properties[Text] = text
+			edit.properties.Store(Text, text)
 			if text := GetText(edit); text != oldText {
 				edit.textChanged(text, oldText)
 			}

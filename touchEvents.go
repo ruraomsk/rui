@@ -107,7 +107,7 @@ func (view *viewData) setTouchListener(tag string, value any) bool {
 	if listeners == nil {
 		view.removeTouchListener(tag)
 	} else if js, ok := touchEvents[tag]; ok {
-		view.properties[tag] = listeners
+		view.properties.Store(tag, listeners)
 		if view.created {
 			view.session.updateProperty(view.htmlID(), js.jsEvent, js.jsFunc+"(this, event)")
 		}
@@ -118,7 +118,7 @@ func (view *viewData) setTouchListener(tag string, value any) bool {
 }
 
 func (view *viewData) removeTouchListener(tag string) {
-	delete(view.properties, tag)
+	view.properties.Delete(tag)
 	if view.created {
 		if js, ok := touchEvents[tag]; ok {
 			view.session.removeProperty(view.htmlID(), js.jsEvent)

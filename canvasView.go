@@ -64,8 +64,6 @@ func (canvasView *canvasViewData) remove(tag string) {
 }
 
 func (canvasView *canvasViewData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	return canvasView.set(canvasView.normalizeTag(tag), value)
 }

@@ -68,7 +68,7 @@ func (view *viewData) setTransitionListener(tag string, value any) bool {
 	if listeners == nil {
 		view.removeTransitionListener(tag)
 	} else if js, ok := transitionEvents[tag]; ok {
-		view.properties[tag] = listeners
+		view.properties.Store(tag, listeners)
 		if view.created {
 			view.session.updateProperty(view.htmlID(), js.jsEvent, js.jsFunc+"(this, event)")
 		}
@@ -79,7 +79,7 @@ func (view *viewData) setTransitionListener(tag string, value any) bool {
 }
 
 func (view *viewData) removeTransitionListener(tag string) {
-	delete(view.properties, tag)
+	view.properties.Delete(tag)
 	if view.created {
 		if js, ok := transitionEvents[tag]; ok {
 			view.session.removeProperty(view.htmlID(), js.jsEvent)
@@ -137,7 +137,7 @@ func (view *viewData) setAnimationListener(tag string, value any) bool {
 	if listeners == nil {
 		view.removeAnimationListener(tag)
 	} else if js, ok := animationEvents[tag]; ok {
-		view.properties[tag] = listeners
+		view.properties.Store(tag, listeners)
 		if view.created {
 			view.session.updateProperty(view.htmlID(), js.jsEvent, js.jsFunc+"(this, event)")
 		}
@@ -148,7 +148,7 @@ func (view *viewData) setAnimationListener(tag string, value any) bool {
 }
 
 func (view *viewData) removeAnimationListener(tag string) {
-	delete(view.properties, tag)
+	view.properties.Delete(tag)
 	if view.created {
 		if js, ok := animationEvents[tag]; ok {
 			view.session.removeProperty(view.htmlID(), js.jsEvent)

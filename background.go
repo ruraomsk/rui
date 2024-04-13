@@ -1,6 +1,9 @@
 package rui
 
-import "strings"
+import (
+	"strings"
+	"sync"
+)
 
 const (
 	// NoRepeat is value of the Repeat property of an background image:
@@ -81,22 +84,22 @@ func createBackground(obj DataObject) BackgroundElement {
 	switch obj.Tag() {
 	case "image":
 		image := new(backgroundImage)
-		image.properties = map[string]any{}
+		image.properties = sync.Map{}
 		result = image
 
 	case "linear-gradient":
 		gradient := new(backgroundLinearGradient)
-		gradient.properties = map[string]any{}
+		gradient.properties = sync.Map{}
 		result = gradient
 
 	case "radial-gradient":
 		gradient := new(backgroundRadialGradient)
-		gradient.properties = map[string]any{}
+		gradient.properties = sync.Map{}
 		result = gradient
 
 	case "conic-gradient":
 		gradient := new(backgroundConicGradient)
-		gradient.properties = map[string]any{}
+		gradient.properties = sync.Map{}
 		result = gradient
 
 	default:
@@ -118,7 +121,7 @@ func createBackground(obj DataObject) BackgroundElement {
 // NewBackgroundImage creates the new background image
 func NewBackgroundImage(params Params) BackgroundElement {
 	result := new(backgroundImage)
-	result.properties = map[string]any{}
+	result.properties = sync.Map{}
 	for tag, value := range params {
 		result.Set(tag, value)
 	}
@@ -131,9 +134,10 @@ func (image *backgroundImage) Tag() string {
 
 func (image *backgroundImage) Clone() BackgroundElement {
 	result := NewBackgroundImage(nil)
-	for tag, value := range image.properties {
-		result.setRaw(tag, value)
-	}
+	image.properties.Range(func(key, value any) bool {
+		result.setRaw(key.(string), value)
+		return true
+	})
 	return result
 }
 
@@ -157,8 +161,6 @@ func (image *backgroundImage) normalizeTag(tag string) string {
 }
 
 func (image *backgroundImage) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	tag = image.normalizeTag(tag)
 	switch tag {

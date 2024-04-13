@@ -55,7 +55,7 @@ func (layout *stackLayoutData) init(session Session) {
 	layout.viewsContainerData.init(session)
 	layout.tag = "StackLayout"
 	layout.systemClass = "ruiStackLayout"
-	layout.properties[TransitionEndEvent] = []func(View, string){layout.pushFinished, layout.popFinished}
+	layout.properties.Store(TransitionEndEvent, []func(View, string){layout.pushFinished, layout.popFinished})
 }
 
 func (layout *stackLayoutData) String() string {
@@ -98,8 +98,6 @@ func (layout *stackLayoutData) popFinished(view View, tag string) {
 }
 
 func (layout *stackLayoutData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	return layout.set(strings.ToLower(tag), value)
 }
@@ -116,7 +114,7 @@ func (layout *stackLayoutData) set(tag string, value any) bool {
 		if ok && listeners != nil {
 			listeners = append(listeners, layout.pushFinished)
 			listeners = append(listeners, layout.popFinished)
-			layout.properties[TransitionEndEvent] = listeners
+			layout.properties.Store(TransitionEndEvent, listeners)
 			layout.propertyChangedEvent(TransitionEndEvent)
 		}
 		return ok
@@ -171,7 +169,7 @@ func (layout *stackLayoutData) Remove(tag string) {
 func (layout *stackLayoutData) remove(tag string) {
 	switch tag {
 	case TransitionEndEvent:
-		layout.properties[TransitionEndEvent] = []func(View, string){layout.pushFinished, layout.popFinished}
+		layout.properties.Store(TransitionEndEvent, []func(View, string){layout.pushFinished, layout.popFinished})
 		layout.propertyChangedEvent(TransitionEndEvent)
 
 	case Current:

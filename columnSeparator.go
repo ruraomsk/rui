@@ -3,6 +3,7 @@ package rui
 import (
 	"fmt"
 	"strings"
+	"sync"
 )
 
 // ColumnSeparatorProperty is the interface of a view separator data
@@ -22,7 +23,7 @@ func newColumnSeparatorProperty(value any) ColumnSeparatorProperty {
 
 	if value == nil {
 		separator := new(columnSeparatorProperty)
-		separator.properties = map[string]any{}
+		separator.properties = sync.Map{}
 		return separator
 	}
 
@@ -32,7 +33,7 @@ func newColumnSeparatorProperty(value any) ColumnSeparatorProperty {
 
 	case DataObject:
 		separator := new(columnSeparatorProperty)
-		separator.properties = map[string]any{}
+		separator.properties = sync.Map{}
 		for _, tag := range []string{Style, Width, ColorTag} {
 			if val, ok := value.PropertyValue(tag); ok && val != "" {
 				separator.set(tag, value)
@@ -42,11 +43,10 @@ func newColumnSeparatorProperty(value any) ColumnSeparatorProperty {
 
 	case ViewBorder:
 		separator := new(columnSeparatorProperty)
-		separator.properties = map[string]any{
-			Style:    value.Style,
-			Width:    value.Width,
-			ColorTag: value.Color,
-		}
+		separator.properties = sync.Map{}
+		separator.properties.Store("Style", value.Style)
+		separator.properties.Store("Width", value.Width)
+		separator.properties.Store("ColorTag", value.Color)
 		return separator
 	}
 
@@ -57,7 +57,7 @@ func newColumnSeparatorProperty(value any) ColumnSeparatorProperty {
 // NewColumnSeparator creates the new ColumnSeparatorProperty
 func NewColumnSeparator(params Params) ColumnSeparatorProperty {
 	separator := new(columnSeparatorProperty)
-	separator.properties = map[string]any{}
+	separator.properties = sync.Map{}
 	if params != nil {
 		for _, tag := range []string{Style, Width, ColorTag} {
 			if value, ok := params[tag]; ok && value != nil {
@@ -88,7 +88,7 @@ func (separator *columnSeparatorProperty) writeString(buffer *strings.Builder, i
 	buffer.WriteString("_{ ")
 	comma := false
 	for _, tag := range []string{Style, Width, ColorTag} {
-		if value, ok := separator.properties[tag]; ok {
+		if value, ok := separator.properties.Load(tag); ok {
 			if comma {
 				buffer.WriteString(", ")
 			}
@@ -110,7 +110,7 @@ func (separator *columnSeparatorProperty) Remove(tag string) {
 
 	switch tag = separator.normalizeTag(tag); tag {
 	case Style, Width, ColorTag:
-		delete(separator.properties, tag)
+		separator.properties.Delete(tag)
 
 	default:
 		ErrorLogF(`"%s" property is not compatible with the ColumnSeparatorProperty`, tag)
@@ -118,8 +118,6 @@ func (separator *columnSeparatorProperty) Remove(tag string) {
 }
 
 func (separator *columnSeparatorProperty) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	tag = separator.normalizeTag(tag)
 
@@ -146,7 +144,7 @@ func (separator *columnSeparatorProperty) Set(tag string, value any) bool {
 func (separator *columnSeparatorProperty) Get(tag string) any {
 	tag = separator.normalizeTag(tag)
 
-	if result, ok := separator.properties[tag]; ok {
+	if result, ok := separator.properties.Load(tag); ok {
 		return result
 	}
 

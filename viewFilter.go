@@ -93,7 +93,12 @@ func NewViewFilter(params Params) ViewFilter {
 		for tag, value := range params {
 			filter.Set(tag, value)
 		}
-		if len(filter.properties) > 0 {
+		count := 0
+		filter.properties.Range(func(key, value any) bool {
+			count++
+			return true
+		})
+		if count > 0 {
 			return filter
 		}
 	}
@@ -122,8 +127,13 @@ func newViewFilter(obj DataObject) ViewFilter {
 			}
 		}
 	}
+	count := 0
+	filter.properties.Range(func(key, value any) bool {
+		count++
+		return true
+	})
 
-	if len(filter.properties) > 0 {
+	if count > 0 {
 		return filter
 	}
 	ErrorLog("Empty view filter")
@@ -131,9 +141,6 @@ func newViewFilter(obj DataObject) ViewFilter {
 }
 
 func (filter *viewFilter) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
-
 	if value == nil {
 		filter.Remove(tag)
 		return true
@@ -166,7 +173,7 @@ func (filter *viewFilter) writeString(buffer *strings.Builder, indent string) {
 	comma := false
 	tags := filter.AllTags()
 	for _, tag := range tags {
-		if value, ok := filter.properties[tag]; ok {
+		if value, ok := filter.properties.Load(tag); ok {
 			if comma {
 				buffer.WriteString(", ")
 			}
@@ -232,26 +239,26 @@ func (filter *viewFilter) cssStyle(session Session) string {
 func (style *viewStyle) setFilter(tag string, value any) bool {
 	switch value := value.(type) {
 	case ViewFilter:
-		style.properties[tag] = value
+		style.properties.Store(tag, value)
 		return true
 
 	case string:
 		if obj := NewDataObject(value); obj == nil {
 			if filter := newViewFilter(obj); filter != nil {
-				style.properties[tag] = filter
+				style.properties.Store(tag, filter)
 				return true
 			}
 		}
 	case DataObject:
 		if filter := newViewFilter(value); filter != nil {
-			style.properties[tag] = filter
+			style.properties.Store(tag, filter)
 			return true
 		}
 
 	case DataValue:
 		if value.IsObject() {
 			if filter := newViewFilter(value.Object()); filter != nil {
-				style.properties[tag] = filter
+				style.properties.Store(tag, filter)
 				return true
 			}
 		}

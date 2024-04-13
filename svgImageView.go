@@ -70,8 +70,6 @@ func (imageView *svgImageViewData) remove(tag string) {
 }
 
 func (imageView *svgImageViewData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	return imageView.set(imageView.normalizeTag(tag), value)
 }
@@ -85,7 +83,7 @@ func (imageView *svgImageViewData) set(tag string, value any) bool {
 	switch tag {
 	case Content:
 		if text, ok := value.(string); ok {
-			imageView.properties[Content] = text
+			imageView.properties.Store(Content, text)
 			if imageView.created {
 				updateInnerHTML(imageView.htmlID(), imageView.session)
 			}

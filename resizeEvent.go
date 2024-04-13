@@ -32,9 +32,9 @@ func (view *viewData) setFrameListener(tag string, value any) bool {
 	}
 
 	if listeners == nil {
-		delete(view.properties, tag)
+		view.properties.Delete(tag)
 	} else {
-		view.properties[tag] = listeners
+		view.properties.Store(tag, listeners)
 	}
 	view.propertyChangedEvent(tag)
 	return true

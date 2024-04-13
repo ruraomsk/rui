@@ -536,16 +536,16 @@ func isInt(value any) (int, bool) {
 
 func (properties *propertyList) setSimpleProperty(tag string, value any) bool {
 	if value == nil {
-		delete(properties.properties, tag)
+		properties.properties.Delete(tag)
 		return true
 	} else if text, ok := value.(string); ok {
 		text = strings.Trim(text, " \t\n\r")
 		if text == "" {
-			delete(properties.properties, tag)
+			properties.properties.Delete(tag)
 			return true
 		}
 		if isConstantName(text) {
-			properties.properties[tag] = text
+			properties.properties.Store(tag, text)
 			return true
 		}
 	}
@@ -591,9 +591,9 @@ func (properties *propertyList) setSizeProperty(tag string, value any) bool {
 		}
 
 		if size.Type == Auto {
-			delete(properties.properties, tag)
+			properties.properties.Delete(tag)
 		} else {
-			properties.properties[tag] = size
+			properties.properties.Store(tag, size)
 		}
 	}
 
@@ -627,7 +627,7 @@ func (properties *propertyList) setAngleProperty(tag string, value any) bool {
 				return false
 			}
 		}
-		properties.properties[tag] = angle
+		properties.properties.Store(tag, angle)
 	}
 
 	return true
@@ -656,9 +656,9 @@ func (properties *propertyList) setColorProperty(tag string, value any) bool {
 		}
 
 		if result == 0 {
-			delete(properties.properties, tag)
+			properties.properties.Delete(tag)
 		} else {
-			properties.properties[tag] = result
+			properties.properties.Store(tag, result)
 		}
 	}
 
@@ -684,7 +684,7 @@ func (properties *propertyList) setEnumProperty(tag string, value any, values []
 			return false
 		}
 
-		properties.properties[tag] = n
+		properties.properties.Store(tag, n)
 	}
 
 	return true
@@ -695,10 +695,10 @@ func (properties *propertyList) setBoolProperty(tag string, value any) bool {
 		if text, ok := value.(string); ok {
 			switch strings.ToLower(strings.Trim(text, " \t")) {
 			case "true", "yes", "on", "1":
-				properties.properties[tag] = true
+				properties.properties.Store(tag, true)
 
 			case "false", "no", "off", "0":
-				properties.properties[tag] = false
+				properties.properties.Store(tag, false)
 
 			default:
 				invalidPropertyValue(tag, value)
@@ -707,17 +707,17 @@ func (properties *propertyList) setBoolProperty(tag string, value any) bool {
 		} else if n, ok := isInt(value); ok {
 			switch n {
 			case 1:
-				properties.properties[tag] = true
+				properties.properties.Store(tag, true)
 
 			case 0:
-				properties.properties[tag] = false
+				properties.properties.Store(tag, false)
 
 			default:
 				invalidPropertyValue(tag, value)
 				return false
 			}
 		} else if b, ok := value.(bool); ok {
-			properties.properties[tag] = b
+			properties.properties.Store(tag, b)
 		} else {
 			notCompatibleType(tag, value)
 			return false
@@ -736,9 +736,9 @@ func (properties *propertyList) setIntProperty(tag string, value any) bool {
 				ErrorLog(err.Error())
 				return false
 			}
-			properties.properties[tag] = n
+			properties.properties.Store(tag, n)
 		} else if n, ok := isInt(value); ok {
-			properties.properties[tag] = n
+			properties.properties.Store(tag, n)
 		} else {
 			notCompatibleType(tag, value)
 			return false
@@ -763,7 +763,7 @@ func (properties *propertyList) setFloatProperty(tag string, value any, min, max
 				ErrorLogF(`"%T" out of range of "%s" property`, value, tag)
 				return false
 			}
-			properties.properties[tag] = value
+			properties.properties.Store(tag, value)
 			return true
 
 		case float32:
@@ -782,7 +782,7 @@ func (properties *propertyList) setFloatProperty(tag string, value any, min, max
 		}
 
 		if f >= min && f <= max {
-			properties.properties[tag] = f
+			properties.properties.Store(tag, f)
 		} else {
 			ErrorLogF(`"%T" out of range of "%s" property`, value, tag)
 			return false
@@ -793,15 +793,13 @@ func (properties *propertyList) setFloatProperty(tag string, value any, min, max
 }
 
 func (properties *propertyList) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	return properties.set(strings.ToLower(tag), value)
 }
 
 func (properties *propertyList) set(tag string, value any) bool {
 	if value == nil {
-		delete(properties.properties, tag)
+		properties.properties.Delete(tag)
 		return true
 	}
 
@@ -834,7 +832,7 @@ func (properties *propertyList) set(tag string, value any) bool {
 	}
 
 	if text, ok := value.(string); ok {
-		properties.properties[tag] = text
+		properties.properties.Store(tag, text)
 		return true
 	}
 

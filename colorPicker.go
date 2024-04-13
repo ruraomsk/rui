@@ -35,7 +35,7 @@ func (picker *colorPickerData) init(session Session) {
 	picker.viewData.init(session)
 	picker.tag = "ColorPicker"
 	picker.colorChangedListeners = []func(ColorPicker, Color, Color){}
-	picker.properties[Padding] = Px(0)
+	picker.properties.Store(Padding, Px(0))
 }
 
 func (picker *colorPickerData) String() string {
@@ -66,7 +66,7 @@ func (picker *colorPickerData) remove(tag string) {
 
 	case ColorPickerValue:
 		oldColor := GetColorPickerValue(picker)
-		delete(picker.properties, ColorPickerValue)
+		picker.properties.Delete(ColorPickerValue)
 		picker.colorChanged(oldColor)
 
 	default:
@@ -75,8 +75,6 @@ func (picker *colorPickerData) remove(tag string) {
 }
 
 func (picker *colorPickerData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	return picker.set(picker.normalizeTag(tag), value)
 }
@@ -169,7 +167,7 @@ func (picker *colorPickerData) handleCommand(self View, command string, data Dat
 		if text, ok := data.PropertyValue("text"); ok {
 			oldColor := GetColorPickerValue(picker)
 			if color, ok := StringToColor(text); ok {
-				picker.properties[ColorPickerValue] = color
+				picker.properties.Store(ColorPickerValue, color)
 				if color != oldColor {
 					for _, listener := range picker.colorChangedListeners {
 						listener(picker, color, oldColor)

@@ -127,7 +127,7 @@ func (picker *filePickerData) remove(tag string) {
 		}
 
 	case Accept:
-		delete(picker.properties, tag)
+		picker.properties.Delete(tag)
 		if picker.created {
 			picker.session.removeProperty(picker.htmlID(), "accept")
 		}
@@ -139,8 +139,6 @@ func (picker *filePickerData) remove(tag string) {
 }
 
 func (picker *filePickerData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	return picker.set(strings.ToLower(tag), value)
 }
@@ -171,7 +169,7 @@ func (picker *filePickerData) set(tag string, value any) bool {
 			if value == "" {
 				picker.remove(Accept)
 			} else {
-				picker.properties[Accept] = value
+				picker.properties.Store(Accept, value)
 			}
 
 		case []string:
@@ -189,7 +187,7 @@ func (picker *filePickerData) set(tag string, value any) bool {
 			if buffer.Len() == 0 {
 				picker.remove(Accept)
 			} else {
-				picker.properties[Accept] = buffer.String()
+				picker.properties.Store(Accept, buffer.String())
 			}
 
 		default:

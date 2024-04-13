@@ -150,10 +150,10 @@ func (listView *listViewData) remove(tag string) {
 		}
 
 	case Orientation, ListWrap:
-		if _, ok := listView.properties[tag]; !ok {
+		if _, ok := listView.properties.Load(tag); !ok {
 			return
 		}
-		delete(listView.properties, tag)
+		listView.properties.Delete(tag)
 		if listView.created {
 			updateCSSStyle(listView.htmlID(), listView.session)
 		}
@@ -163,7 +163,7 @@ func (listView *listViewData) remove(tag string) {
 		if current == -1 {
 			return
 		}
-		delete(listView.properties, tag)
+		listView.properties.Delete(tag)
 		if listView.created {
 			htmlID := listView.htmlID()
 			session := listView.session
@@ -178,10 +178,10 @@ func (listView *listViewData) remove(tag string) {
 
 	case ItemWidth, ItemHeight, ItemHorizontalAlign, ItemVerticalAlign, ItemCheckbox,
 		CheckboxHorizontalAlign, CheckboxVerticalAlign:
-		if _, ok := listView.properties[tag]; !ok {
+		if _, ok := listView.properties.Load(tag); !ok {
 			return
 		}
-		delete(listView.properties, tag)
+		listView.properties.Delete(tag)
 		if listView.created {
 			updateInnerHTML(listView.htmlID(), listView.session)
 		}
@@ -332,9 +332,9 @@ func (listView *listViewData) setItemStyle(tag string, value any) bool {
 	switch value := value.(type) {
 	case string:
 		if value == "" {
-			delete(listView.properties, tag)
+			listView.properties.Delete(tag)
 		} else {
-			listView.properties[tag] = value
+			listView.properties.Store(tag, value)
 		}
 
 	default:
@@ -1073,7 +1073,7 @@ func (listView *listViewData) handleCommand(self View, command string, data Data
 	switch command {
 	case "itemSelected":
 		if number, ok := dataIntProperty(data, `number`); ok {
-			listView.properties[Current] = number
+			listView.properties.Store(Current, number)
 			for _, listener := range listView.selectedListeners {
 				listener(listView, number)
 			}
@@ -1081,8 +1081,8 @@ func (listView *listViewData) handleCommand(self View, command string, data Data
 		}
 
 	case "itemUnselected":
-		if _, ok := listView.properties[Current]; ok {
-			delete(listView.properties, Current)
+		if _, ok := listView.properties.Load(Current); ok {
+			listView.properties.Delete(Current)
 			for _, listener := range listView.selectedListeners {
 				listener(listView, -1)
 			}

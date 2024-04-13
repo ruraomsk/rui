@@ -84,7 +84,7 @@ func (list *dropDownListData) remove(tag string) {
 
 	case Current:
 		oldCurrent := GetCurrent(list)
-		delete(list.properties, Current)
+		list.properties.Delete(Current)
 		if oldCurrent != 0 {
 			if list.created {
 				list.session.callFunc("selectDropDownListItem", list.htmlID(), 0)
@@ -99,8 +99,6 @@ func (list *dropDownListData) remove(tag string) {
 }
 
 func (list *dropDownListData) Set(tag string, value any) bool {
-	mutexProperties.Lock()
-	defer mutexProperties.Unlock()
 
 	return list.set(strings.ToLower(tag), value)
 }
@@ -394,7 +392,7 @@ func (list *dropDownListData) handleCommand(self View, command string, data Data
 			if number, err := strconv.Atoi(text); err == nil {
 				if GetCurrent(list) != number && number >= 0 && number < len(list.items) {
 					old := GetCurrent(list)
-					list.properties[Current] = number
+					list.properties.Store(Current,number)
 					list.onSelectedItemChanged(number, old)
 				}
 			} else {
