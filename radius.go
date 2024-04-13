@@ -244,6 +244,9 @@ func (radius *radiusPropertyData) Remove(tag string) {
 }
 
 func (radius *radiusPropertyData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	if value == nil {
 		radius.Remove(tag)
 		return true

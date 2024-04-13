@@ -109,6 +109,9 @@ func (resizable *resizableData) remove(tag string) {
 }
 
 func (resizable *resizableData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return resizable.set(strings.ToLower(tag), value)
 }
 

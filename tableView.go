@@ -342,6 +342,9 @@ func (table *tableViewData) remove(tag string) {
 }
 
 func (table *tableViewData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return table.set(table.normalizeTag(tag), value)
 }
 

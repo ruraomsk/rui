@@ -793,6 +793,9 @@ func (properties *propertyList) setFloatProperty(tag string, value any, min, max
 }
 
 func (properties *propertyList) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return properties.set(strings.ToLower(tag), value)
 }
 

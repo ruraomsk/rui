@@ -112,6 +112,9 @@ func (shadow *viewShadowData) Remove(tag string) {
 }
 
 func (shadow *viewShadowData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	if value == nil {
 		shadow.Remove(tag)
 		return true

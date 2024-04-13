@@ -190,6 +190,9 @@ func (edit *editViewData) remove(tag string) {
 }
 
 func (edit *editViewData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return edit.set(edit.normalizeTag(tag), value)
 }
 

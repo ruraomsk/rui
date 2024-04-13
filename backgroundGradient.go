@@ -107,6 +107,8 @@ func (gradient *backgroundGradient) parseGradientText(value string) []Background
 }
 
 func (gradient *backgroundGradient) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
 
 	switch tag = strings.ToLower(tag); tag {
 	case Repeating:
@@ -296,6 +298,8 @@ func (image *backgroundLinearGradient) Clone() BackgroundElement {
 }
 
 func (gradient *backgroundLinearGradient) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
 	if strings.ToLower(tag) == Direction {
 		switch value := value.(type) {
 		case AngleUnit:
@@ -402,6 +406,9 @@ func (gradient *backgroundRadialGradient) normalizeTag(tag string) string {
 }
 
 func (gradient *backgroundRadialGradient) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	tag = gradient.normalizeTag(tag)
 	switch tag {
 	case RadialGradientRadius:

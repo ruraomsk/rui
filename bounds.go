@@ -80,6 +80,9 @@ func (bounds *boundsPropertyData) Remove(tag string) {
 }
 
 func (bounds *boundsPropertyData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	if value == nil {
 		bounds.Remove(tag)
 		return true

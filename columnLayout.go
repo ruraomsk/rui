@@ -115,6 +115,9 @@ func (columnLayout *columnLayoutData) remove(tag string) {
 }
 
 func (columnLayout *columnLayoutData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return columnLayout.set(columnLayout.normalizeTag(tag), value)
 }
 

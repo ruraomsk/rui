@@ -306,6 +306,9 @@ func (view *viewData) propertyChangedEvent(tag string) {
 }
 
 func (view *viewData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return view.set(strings.ToLower(tag), value)
 }
 

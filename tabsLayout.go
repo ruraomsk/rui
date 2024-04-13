@@ -190,6 +190,9 @@ func (tabsLayout *tabsLayoutData) remove(tag string) {
 }
 
 func (tabsLayout *tabsLayoutData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return tabsLayout.set(strings.ToLower(tag), value)
 }
 

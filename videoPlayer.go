@@ -77,6 +77,9 @@ func (player *videoPlayerData) remove(tag string) {
 }
 
 func (player *videoPlayerData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return player.set(strings.ToLower(tag), value)
 }
 

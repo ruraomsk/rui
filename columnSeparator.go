@@ -118,6 +118,9 @@ func (separator *columnSeparatorProperty) Remove(tag string) {
 }
 
 func (separator *columnSeparatorProperty) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	tag = separator.normalizeTag(tag)
 
 	if value == nil {

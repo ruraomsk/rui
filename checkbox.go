@@ -60,6 +60,8 @@ func (button *checkboxData) Get(tag string) any {
 }
 
 func (button *checkboxData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
 	return button.set(tag, value)
 }
 

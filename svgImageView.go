@@ -70,6 +70,9 @@ func (imageView *svgImageViewData) remove(tag string) {
 }
 
 func (imageView *svgImageViewData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return imageView.set(imageView.normalizeTag(tag), value)
 }
 

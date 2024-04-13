@@ -431,6 +431,9 @@ func (border *borderProperty) Remove(tag string) {
 }
 
 func (border *borderProperty) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	if value == nil {
 		border.Remove(tag)
 		return true

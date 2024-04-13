@@ -157,6 +157,9 @@ func (image *backgroundImage) normalizeTag(tag string) string {
 }
 
 func (image *backgroundImage) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	tag = image.normalizeTag(tag)
 	switch tag {
 	case Attachment, Width, Height, Repeat, ImageHorizontalAlign, ImageVerticalAlign,

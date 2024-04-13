@@ -186,6 +186,8 @@ func (player *mediaPlayerData) remove(tag string) {
 }
 
 func (player *mediaPlayerData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
 	return player.set(strings.ToLower(tag), value)
 }
 

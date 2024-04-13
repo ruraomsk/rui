@@ -17,6 +17,8 @@ func (params Params) getRaw(tag string) any {
 }
 
 func (params Params) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
 	params.setRaw(tag, value)
 	return true
 }

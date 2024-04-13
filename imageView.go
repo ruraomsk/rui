@@ -117,6 +117,9 @@ func (imageView *imageViewData) remove(tag string) {
 }
 
 func (imageView *imageViewData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return imageView.set(imageView.normalizeTag(tag), value)
 }
 

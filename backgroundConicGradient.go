@@ -140,6 +140,9 @@ func (gradient *backgroundConicGradient) normalizeTag(tag string) string {
 }
 
 func (gradient *backgroundConicGradient) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	tag = gradient.normalizeTag(tag)
 	switch tag {
 	case CenterX, CenterY, Repeating, From:

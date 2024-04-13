@@ -188,6 +188,8 @@ func (animation *animationData) normalizeTag(tag string) string {
 }
 
 func (animation *animationData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
 	if value == nil {
 		animation.Remove(tag)
 		return true

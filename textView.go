@@ -58,6 +58,9 @@ func (textView *textViewData) remove(tag string) {
 }
 
 func (textView *textViewData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return textView.set(strings.ToLower(tag), value)
 }
 

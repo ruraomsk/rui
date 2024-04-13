@@ -3,6 +3,9 @@ package rui
 import "strings"
 
 func (cell *tableCellView) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return cell.set(strings.ToLower(tag), value)
 }
 

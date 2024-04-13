@@ -123,6 +123,9 @@ func (style *viewStyle) remove(tag string) {
 }
 
 func (style *viewStyle) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return style.set(strings.ToLower(tag), value)
 }
 

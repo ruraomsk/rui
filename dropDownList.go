@@ -99,6 +99,9 @@ func (list *dropDownListData) remove(tag string) {
 }
 
 func (list *dropDownListData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return list.set(strings.ToLower(tag), value)
 }
 

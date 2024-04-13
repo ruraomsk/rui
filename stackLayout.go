@@ -98,6 +98,9 @@ func (layout *stackLayoutData) popFinished(view View, tag string) {
 }
 
 func (layout *stackLayoutData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return layout.set(strings.ToLower(tag), value)
 }
 

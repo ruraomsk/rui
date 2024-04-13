@@ -100,6 +100,9 @@ func (picker *numberPickerData) remove(tag string) {
 }
 
 func (picker *numberPickerData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return picker.set(picker.normalizeTag(tag), value)
 }
 

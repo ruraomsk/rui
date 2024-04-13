@@ -242,6 +242,9 @@ func (gridLayout *gridLayoutData) remove(tag string) {
 }
 
 func (gridLayout *gridLayoutData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return gridLayout.set(gridLayout.normalizeTag(tag), value)
 }
 

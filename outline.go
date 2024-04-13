@@ -56,6 +56,9 @@ func (outline *outlinePropertyData) Remove(tag string) {
 }
 
 func (outline *outlinePropertyData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	if value == nil {
 		outline.Remove(tag)
 		return true

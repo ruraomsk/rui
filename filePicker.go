@@ -139,6 +139,9 @@ func (picker *filePickerData) remove(tag string) {
 }
 
 func (picker *filePickerData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return picker.set(strings.ToLower(tag), value)
 }
 

@@ -131,6 +131,9 @@ func newViewFilter(obj DataObject) ViewFilter {
 }
 
 func (filter *viewFilter) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	if value == nil {
 		filter.Remove(tag)
 		return true

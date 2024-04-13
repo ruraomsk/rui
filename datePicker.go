@@ -115,6 +115,9 @@ func (picker *datePickerData) remove(tag string) {
 }
 
 func (picker *datePickerData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return picker.set(picker.normalizeTag(tag), value)
 }
 

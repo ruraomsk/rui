@@ -75,6 +75,9 @@ func (picker *colorPickerData) remove(tag string) {
 }
 
 func (picker *colorPickerData) Set(tag string, value any) bool {
+	mutexProperties.Lock()
+	defer mutexProperties.Unlock()
+
 	return picker.set(picker.normalizeTag(tag), value)
 }
 
