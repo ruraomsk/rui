@@ -288,19 +288,19 @@ func FinishApp() {
 	apps = []*application{}
 }
 
-func OpenBrowser(url string) bool {
+func OpenBrowser(url string) error {
 	var err error
 
 	switch runtime.GOOS {
 	case "linux":
 		for _, provider := range []string{"xdg-open", "x-www-browser", "www-browser"} {
 			if _, err = exec.LookPath(provider); err == nil {
-				if exec.Command(provider, url).Start(); err == nil {
-					return true
+				if err = exec.Command(provider, url).Start(); err == nil {
+					return nil
 				}
 			}
 		}
-
+		return fmt.Errorf("unsupported provider")
 	case "windows":
 		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
 
@@ -310,6 +310,5 @@ func OpenBrowser(url string) bool {
 	default:
 		err = fmt.Errorf("unsupported platform")
 	}
-
-	return err != nil
+	return err
 }
